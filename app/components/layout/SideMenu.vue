@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import QRCode from 'qrcode'
+
 const menuItems = [
   { name: '控制台', icon: 'dashboard', path: '/' },
   { name: '代理列表', icon: 'users', path: '/agents' },
@@ -6,6 +9,49 @@ const menuItems = [
   { name: '業績統計', icon: 'bar-chart', path: '#' },
   { name: '系統設定', icon: 'settings', path: '#' },
 ]
+
+// --- 推廣碼連結 ---
+const promoCode = ref('VIP888')
+const promoLink = ref('')
+const qrCodeDataUrl = ref('')
+const copied = ref(false)
+
+onMounted(async () => {
+  promoLink.value = `https://example.com/register?ref=${promoCode.value}`
+  try {
+    qrCodeDataUrl.value = await QRCode.toDataURL(promoLink.value, {
+      width: 180,
+      margin: 2,
+      color: {
+        dark: '#1e293b',  // slate-800
+        light: '#ffffff',
+      },
+    })
+  } catch (err) {
+    console.error('QR Code generation failed:', err)
+  }
+})
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(promoLink.value)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    console.error('Failed to copy link')
+  }
+}
+
+function downloadQRCode() {
+  if (!qrCodeDataUrl.value) return
+  
+  const link = document.createElement('a')
+  link.href = qrCodeDataUrl.value
+  link.download = `promo_qrcode_${promoCode.value}.png`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 </script>
 
 <template>
@@ -38,12 +84,47 @@ const menuItems = [
       </NuxtLink>
     </nav>
 
-    <!-- Footer Stats (Optional) -->
-    <div class="p-4 bg-slate-800/50 m-4 rounded-xl">
-      <div class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">系統狀態</div>
-      <div class="flex items-center gap-2">
-        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-        <span class="text-sm text-slate-300">連線正常</span>
+    <!-- Promo Code QR Section -->
+    <div class="p-4 bg-slate-800/50 m-4 rounded-xl space-y-3">
+      <div class="text-xs text-slate-500 uppercase font-bold tracking-wider">推廣碼連結</div>
+      
+      <!-- QR Code -->
+      <div class="flex justify-center">
+        <div 
+          class="p-2 bg-white rounded-xl shadow-sm relative group cursor-pointer hover:shadow-md transition-all"
+          @click="downloadQRCode"
+          title="點擊下載 QrCode"
+        >
+          <img 
+            v-if="qrCodeDataUrl" 
+            :src="qrCodeDataUrl" 
+            alt="推廣碼 QR Code"
+            class="w-32 h-32 rounded-lg"
+          >
+          <div v-else class="w-32 h-32 bg-slate-100 rounded-lg flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v.01"/></svg>
+          </div>
+          <!-- Download overlay -->
+          <div class="absolute inset-0 bg-slate-900/40 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Link + Copy -->
+      <div class="flex items-center gap-1.5 bg-slate-900/60 rounded-lg p-2 border border-slate-700/50">
+        <p class="flex-1 text-[10px] text-slate-400 truncate font-mono">{{ promoLink }}</p>
+        <button 
+          @click="copyLink"
+          class="shrink-0 p-1.5 rounded-md transition-all"
+          :class="copied ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-slate-700 text-slate-400 hover:text-slate-200'"
+          :title="copied ? '已複製！' : '複製連結'"
+        >
+          <!-- Check Icon (copied) -->
+          <svg v-if="copied" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <!-- Copy Icon -->
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -52,3 +133,4 @@ const menuItems = [
 <style scoped>
 /* Any side menu styles */
 </style>
+

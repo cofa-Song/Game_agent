@@ -72,7 +72,7 @@ const cpaRewardTiers = ref([
   {
     range: '01 - 50 人',
     price: 600,
-    status: 'active',       // 'active' | 'locked' | 'inactive'
+    status: 'active',       // 'active' | 'inactive'
     statusLabel: '當前適用',
     progress: '已達成 45 人，還差 5 人',
     current: 45,
@@ -81,8 +81,8 @@ const cpaRewardTiers = ref([
   {
     range: '51 - 100 人',
     price: 900,
-    status: 'locked',
-    statusLabel: '未鎖定',
+    status: 'inactive',
+    statusLabel: '未達標',
     progress: '--',
     current: 0,
     target: 100,
@@ -305,13 +305,11 @@ const commissionRate = ref(60) // %
                   class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
                   :class="{
                     'bg-emerald-100 text-emerald-700': tier.status === 'active',
-                    'bg-slate-100 text-slate-500': tier.status === 'locked',
                     'bg-slate-50 text-slate-400': tier.status === 'inactive'
                   }"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="{
                     'bg-emerald-500': tier.status === 'active',
-                    'bg-slate-400': tier.status === 'locked',
                     'bg-slate-300': tier.status === 'inactive'
                   }"></span>
                   {{ tier.statusLabel }}
