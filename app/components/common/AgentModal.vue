@@ -17,6 +17,7 @@ interface AgentData {
   cpaLevel2?: number;
   cpaLevel3?: number;
   commissionRatio?: number;
+  is2faEnabled: boolean;
 }
 
 const props = defineProps<{
@@ -41,7 +42,8 @@ const form = ref<AgentData>({
   cpaLevel1: 0,
   cpaLevel2: 0,
   cpaLevel3: 0,
-  commissionRatio: 0
+  commissionRatio: 0,
+  is2faEnabled: false
 })
 
 const accountTypeOptions = [
@@ -77,7 +79,8 @@ function resetForm() {
     cpaLevel1: 0,
     cpaLevel2: 0,
     cpaLevel3: 0,
-    commissionRatio: 0
+    commissionRatio: 0,
+    is2faEnabled: false
   }
 }
 
@@ -231,20 +234,45 @@ function handleSubmit() {
               >
             </div>
 
-            <!-- Contact -->
-            <div class="space-y-2">
-              <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                聯絡方式
-              </label>
-              <input 
-                v-model="form.contact"
-                type="text"
-                placeholder="例如: Line: @wang123"
-                class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
-              >
+              <div class="space-y-2">
+                <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
+                  聯絡方式
+                </label>
+                <input 
+                  v-model="form.contact"
+                  type="text"
+                  placeholder="例如: Line: @wang123"
+                  class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
+                >
+              </div>
+
+              <!-- 2FA Toggle -->
+              <div class="space-y-2">
+                <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
+                  2FA 雙重驗證
+                </label>
+                <div 
+                  @click="form.is2faEnabled = !form.is2faEnabled"
+                  class="relative inline-flex h-11 w-24 shrink-0 cursor-pointer items-center rounded-xl transition-colors duration-300 focus:outline-none border-2 p-1"
+                  :class="form.is2faEnabled ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-100 border-slate-200'"
+                >
+                  <span 
+                    class="pointer-events-none inline-block h-8 w-11 transform rounded-lg bg-white shadow-lg ring-0 transition-transform duration-300 flex items-center justify-center"
+                    :class="form.is2faEnabled ? 'translate-x-10' : 'translate-x-0'"
+                  >
+                    <span class="text-[10px] font-black" :class="form.is2faEnabled ? 'text-indigo-600' : 'text-slate-400'">
+                      {{ form.is2faEnabled ? 'ON' : 'OFF' }}
+                    </span>
+                  </span>
+                  <div class="absolute inset-0 flex items-center justify-between px-3 pointer-events-none">
+                    <span class="text-[8px] font-black text-indigo-100 opacity-60" v-if="form.is2faEnabled">ACTIVE</span>
+                    <span class="text-[8px] font-black text-slate-400 ml-auto" v-else>DISABLED</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
           <!-- CPA & Commission Configuration Section -->
           <div v-if="mode === 'add'" class="pt-6 border-t border-slate-100">

@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import AgentModal from '~/components/common/AgentModal.vue'
 import CpaModal from '~/components/common/CpaModal.vue'
+import PromotionFundModal from '~/components/common/PromotionFundModal.vue'
 
 // --- Interface & Data Models ---
 interface AgentData {
@@ -21,9 +22,8 @@ interface AgentData {
   createdAt: string; // 帳號建立日期
   riskAnomaly: boolean; // 風控異常
   status: 'normal' | 'frozen' | 'disabled'; // 帳號狀態
+  is2faEnabled: boolean;
 }
-
-// --- Search Form State ---
 
 // --- Mock Data ---
 const agents = ref<AgentData[]>([
@@ -43,7 +43,8 @@ const agents = ref<AgentData[]>([
     remark: 'VIP客戶來源重點',
     createdAt: '2025-01-15',
     riskAnomaly: false,
-    status: 'normal'
+    status: 'normal',
+    is2faEnabled: true
   },
   {
     id: '2',
@@ -61,7 +62,8 @@ const agents = ref<AgentData[]>([
     remark: '',
     createdAt: '2025-02-10',
     riskAnomaly: true,
-    status: 'frozen'
+    status: 'frozen',
+    is2faEnabled: false
   },
   {
     id: '3',
@@ -79,7 +81,8 @@ const agents = ref<AgentData[]>([
     remark: '多期未達標',
     createdAt: '2025-03-01',
     riskAnomaly: false,
-    status: 'disabled'
+    status: 'disabled',
+    is2faEnabled: false
   },
   {
     id: '4',
@@ -97,7 +100,8 @@ const agents = ref<AgentData[]>([
     remark: '社群流量大',
     createdAt: '2025-03-05',
     riskAnomaly: false,
-    status: 'normal'
+    status: 'normal',
+    is2faEnabled: true
   }
 ])
 
@@ -122,7 +126,6 @@ const getStatusColor = (status: string) => {
 
 const handleSearch = (filters: any) => {
   console.log('Search triggered with filters:', filters)
-  // Here we would filter the agents list based on 'filters'
 }
 
 const handleReset = () => {
@@ -150,7 +153,6 @@ const handleEdit = (agent: AgentData) => {
 }
 
 const handleEditCpa = (agent: AgentData) => {
-  // Mock 'capCpa' based on level or current value
   const capMap: Record<string, number> = {
     '總代理': 1000,
     '一級代理': 500,
@@ -159,7 +161,7 @@ const handleEditCpa = (agent: AgentData) => {
   
   selectedCpaAgent.value = {
     uid: agent.uid,
-    account: agent.realName, // or some other account name field
+    account: agent.realName,
     level: agent.accountType,
     cpaLevel1: (agent as any).cpaLevel1 || 0,
     cpaLevel2: (agent as any).cpaLevel2 || 0,
@@ -172,21 +174,18 @@ const handleEditCpa = (agent: AgentData) => {
 
 const handleSaveAgent = (formData: any) => {
   if (modalMode.value === 'add') {
-    // Generate a new ID and push to mock data
     const newId = (agents.value.length + 1).toString()
     agents.value.unshift({
       ...formData,
       id: newId,
-      cpaMatrix: true, // Show icon since we have CPA now
+      cpaMatrix: true,
       depositCommission: formData.commissionRatio || 0,
       downlineAgents: 0,
       directPlayers: 0,
       createdAt: new Date().toISOString().split('T')[0],
       riskAnomaly: false
-      // status is included in formData
     })
   } else {
-    // Find and update existing agent
     const index = agents.value.findIndex(a => a.uid === formData.uid)
     if (index !== -1) {
       const currentAgent = agents.value[index]
@@ -212,6 +211,47 @@ const handleSaveCpa = (cpaData: any) => {
     agent.depositCommission = cpaData.commissionRatio
   }
 }
+
+// --- Promotion Fund Modal Logic ---
+const promotionBalance = ref(25000) // Mock agent promotion fund balance in TWD
+const isPromotionModalShow = ref(false)
+const selectedAgentForPromotion = ref<any>(null)
+
+const handleOpenPromotion = (agent: AgentData) => {
+  selectedAgentForPromotion.value = {
+    uid: agent.uid,
+    account: agent.realName
+  }
+  isPromotionModalShow.value = true
+}
+
+const handlePromotionSubmit = (data: any) => {
+  console.log('Agent Promotion submitted:', data)
+  promotionBalance.value -= data.twdAmount
+  isPromotionModalShow.value = false
+  alert(`成功派發 $${data.amount.toLocaleString()} 台幣給代理 ${data.uid}！`)
+}
+
+// --- Privacy / Desensitization Logic ---
+const isMasked = ref(true)
+
+const maskString = (str: string, type: 'name' | 'phone') => {
+  if (!isMasked.value) return str
+  if (!str) return ''
+  
+  if (type === 'name') {
+    if (str.length <= 2) return str[0] + '*'
+    return str[0] + '*'.repeat(str.length - 2) + str[str.length - 1]
+  } else if (type === 'phone') {
+    if (str.length < 7) return str
+    return str.slice(0, 4) + '***' + str.slice(-3)
+  }
+  return str
+}
+
+const toggleMask = () => {
+  isMasked.value = !isMasked.value
+}
 </script>
 
 <template>
@@ -222,14 +262,12 @@ const handleSaveCpa = (cpaData: any) => {
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">代理列表</h1>
         <p class="text-sm text-slate-500 mt-1">管理代理商與配置、CPA 設定與業績概覽</p>
       </div>
-      <div>
+      <div class="flex items-center gap-4">
         <button 
           @click="handleAddAgent"
           class="group relative inline-flex items-center gap-2 px-8 py-3 bg-cyan-500 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/30 hover:bg-cyan-600 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
         >
-          <!-- Shiny Effect -->
           <div class="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-[-30deg] -translate-x-full group-hover:animate-[shine_0.75s_ease-out]"></div>
-          
           <div class="relative flex items-center gap-2">
             <div class="p-1 bg-white/20 rounded-lg group-hover:scale-110 transition-transform duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -245,13 +283,21 @@ const handleSaveCpa = (cpaData: any) => {
 
     <!-- Data Table Card -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <!-- Table Header controls -->
       <div class="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-        <h3 class="text-base font-semibold text-slate-800">搜尋結果</h3>
+        <div class="flex items-center gap-3">
+          <h3 class="text-base font-semibold text-slate-800">搜尋結果</h3>
+          <button 
+            @click="toggleMask" 
+            class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-colors tooltip-trigger"
+            :title="isMasked ? '已脫敏 (點擊顯示資料)' : '顯示中 (點擊隱藏資料)'"
+          >
+            <svg v-if="isMasked" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88 3 3m6.12 11.12L3.12 20.88h17.76M21 21l-6.88-6.88M12 4.47a9 9 0 0 1 7.23 4.53m-1.2 5.07A9 9 0 0 1 4.77 12"/></svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <div class="text-sm text-slate-500">共 {{ agents.length }} 筆資料</div>
       </div>
       
-      <!-- Table wrapper for horizontal scroll -->
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left whitespace-nowrap">
           <thead class="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-200">
@@ -265,9 +311,6 @@ const handleSaveCpa = (cpaData: any) => {
               <th scope="col" class="px-4 py-3 font-semibold text-right">玩家總數</th>
               <th scope="col" class="px-4 py-3 font-semibold">真實姓名</th>
               <th scope="col" class="px-4 py-3 font-semibold">手機號碼</th>
-              <th scope="col" class="px-4 py-3 font-semibold">聯絡方式</th>
-              <th scope="col" class="px-4 py-3 font-semibold">備註</th>
-              <th scope="col" class="px-4 py-3 font-semibold">建立日期</th>
               <th scope="col" class="px-4 py-3 font-semibold text-center">風控</th>
               <th scope="col" class="px-4 py-3 font-semibold">狀態</th>
               <th scope="col" class="px-4 py-3 font-semibold text-center sticky right-0 bg-slate-50 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">操作</th>
@@ -295,11 +338,8 @@ const handleSaveCpa = (cpaData: any) => {
               <td class="px-4 py-3 text-right text-slate-700 font-medium">{{ agent.depositCommission }}%</td>
               <td class="px-4 py-3 text-right text-slate-600">{{ agent.downlineAgents }}</td>
               <td class="px-4 py-3 text-right text-slate-600">{{ agent.directPlayers }}</td>
-              <td class="px-4 py-3 text-slate-700">{{ agent.realName }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ agent.phone }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ agent.contact }}</td>
-              <td class="px-4 py-3 text-slate-500 text-xs max-w-[150px] truncate" :title="agent.remark">{{ agent.remark || '-' }}</td>
-              <td class="px-4 py-3 text-slate-600 text-xs">{{ agent.createdAt }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ maskString(agent.realName, 'name') }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ maskString(agent.phone, 'phone') }}</td>
               <td class="px-4 py-3 text-center">
                 <svg v-if="agent.riskAnomaly" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-500 mx-auto"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500 mx-auto"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
@@ -314,13 +354,20 @@ const handleSaveCpa = (cpaData: any) => {
                 </span>
               </td>
               <td class="px-4 py-3 text-center sticky right-0 bg-white shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)] border-l border-slate-100 group-hover:bg-slate-50/80 transition-colors">
-                <div class="flex items-center gap-1 justify-center">
+                <div class="flex items-center gap-2 justify-center">
                   <button 
                     @click="handleEdit(agent)"
-                    class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors inline-flex items-center justify-center"
+                    class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                     title="編輯"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                  </button>
+                  <button 
+                    @click="handleOpenPromotion(agent)"
+                    class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                    title="派發推廣金"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H4v4"/><path d="M2 12h20"/><path d="m20 12 1 4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2l1-4"/><path d="M12 18v4"/><path d="m9 20 3 2 3-2"/></svg>
                   </button>
                 </div>
               </td>
@@ -329,7 +376,6 @@ const handleSaveCpa = (cpaData: any) => {
         </table>
       </div>
       
-      <!-- Pagination (Mock) -->
       <div class="px-6 py-4 flex items-center justify-between border-t border-slate-100 bg-slate-50/50">
         <div class="text-sm text-slate-500">
           顯示 1 到 {{ agents.length }} 筆，共 {{ agents.length }} 筆
@@ -357,6 +403,16 @@ const handleSaveCpa = (cpaData: any) => {
       :agent-data="selectedCpaAgent"
       @close="isCpaModalShow = false"
       @save="handleSaveCpa"
+    />
+
+    <!-- Promotion Fund Modal -->
+    <PromotionFundModal 
+      :show="isPromotionModalShow"
+      mode="agent"
+      :player-data="selectedAgentForPromotion"
+      :promotion-balance="promotionBalance"
+      @close="isPromotionModalShow = false"
+      @submit="handlePromotionSubmit"
     />
   </div>
 </template>
