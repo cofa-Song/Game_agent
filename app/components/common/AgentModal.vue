@@ -275,9 +275,16 @@ function handleSubmit() {
             <div class="mt-6 p-4 bg-slate-50 rounded-2xl space-y-4">
               <div class="flex items-center justify-between">
                 <label class="text-sm font-bold text-slate-700">下線儲值抽成分配率 (%)</label>
-                <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-indigo-600 font-bold text-sm shadow-sm">
-                  {{ form.commissionRatio }}%
-                </span>
+                <div class="relative w-20">
+                  <input 
+                    v-model.number="form.commissionRatio"
+                    type="number"
+                    min="0"
+                    max="100"
+                    class="w-full py-1.5 pl-3 pr-6 bg-white border border-slate-200 rounded-lg text-indigo-600 font-bold text-sm shadow-sm outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-center"
+                  >
+                  <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">%</span>
+                </div>
               </div>
               <input 
                 v-model.number="form.commissionRatio"
