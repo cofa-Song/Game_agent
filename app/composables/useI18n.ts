@@ -18,19 +18,30 @@ export const useI18n = () => {
     locale.value = localeCookie.value
   }
 
-  const t = (path: string) => {
+  const t = (path: string, params?: Record<string, any>) => {
     const keys = path.split('.')
     let current = locales[locale.value]
     
     for (const key of keys) {
-      if (current && current[key]) {
+      if (current && current[key] !== undefined) {
         current = current[key]
       } else {
         return path // Fallback to path string
       }
     }
     
-    return current
+    if (typeof current !== 'string') {
+      return current
+    }
+
+    let result = current
+    if (params) {
+      Object.keys(params).forEach(key => {
+        result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), params[key])
+      })
+    }
+    
+    return result
   }
 
   const setLocale = (newLocale: string) => {

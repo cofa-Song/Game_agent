@@ -16,7 +16,7 @@ watch(() => route.path, () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 font-sans flex relative overflow-x-hidden">
+  <div class="h-screen bg-slate-50 font-sans flex relative overflow-hidden">
     <!-- Overlay for mobile -->
     <div 
       v-if="isSidebarOpen" 
@@ -28,7 +28,7 @@ watch(() => route.path, () => {
     <SideMenu :is-open="isSidebarOpen" @toggle="toggleSidebar" />
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col min-w-0">
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
       <!-- Top Navbar -->
       <Header @toggle-sidebar="toggleSidebar" />
 

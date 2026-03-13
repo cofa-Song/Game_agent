@@ -3,26 +3,40 @@ import { ref, computed } from 'vue'
 import AgentModal from '~/components/common/AgentModal.vue'
 import CpaModal from '~/components/common/CpaModal.vue'
 import PromotionFundModal from '~/components/common/PromotionFundModal.vue'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 
 // --- Interface & Data Models ---
 interface AgentData {
-  id: string; // 代理UID
+  id: string;
   uid: string;
-  account: string; // 登入帳號
-  accountType: string; // 帳號 / 身份類型
-  promoCode: string; // 推廣碼
-  cpaMatrix: boolean; // CPA 矩陣 (Icon)
-  depositCommission: number; // 儲值抽成(%)
-  downlineAgents: number; // 下線代理總數
-  directPlayers: number; // 直屬玩家總數
-  realName: string; // 真實姓名
-  phone: string; // 手機號碼
-  contact: string; // 聯絡方式
-  remark: string; // 備註
-  createdAt: string; // 帳號建立日期
-  riskAnomaly: boolean; // 風控異常
-  status: 'normal' | 'frozen' | 'disabled'; // 帳號狀態
+  account: string;
+  accountType: string;
+  promoCode: string;
+  cpaMatrix: boolean;
+  depositCommission: number;
+  downlineAgents: number;
+  directPlayers: number;
+  realName: string;
+  phone: string;
+  contact: string;
+  remark: string;
+  createdAt: string;
+  riskAnomaly: boolean;
+  status: 'normal' | 'frozen' | 'disabled';
   is2faEnabled: boolean;
+}
+
+// Account type key mapping
+const accountTypeKeyMap: Record<string, string> = {
+  '總代理': 'account_types.master_agent',
+  '一級代理': 'account_types.level1_agent',
+  '助理帳號': 'account_types.assistant'
+}
+
+const getAccountTypeLabel = (type: string) => {
+  return t(accountTypeKeyMap[type] || type) as string
 }
 
 // --- Mock Data ---
@@ -108,10 +122,10 @@ const agents = ref<AgentData[]>([
 // --- Computed & Actions ---
 const getStatusLabel = (status: string) => {
   switch(status) {
-    case 'normal': return '正常'
-    case 'frozen': return '凍結'
-    case 'disabled': return '停用'
-    default: return '未知'
+    case 'normal': return t('agents.status_normal')
+    case 'frozen': return t('agents.status_frozen')
+    case 'disabled': return t('agents.status_disabled')
+    default: return t('agents.status_unknown')
   }
 }
 
@@ -162,7 +176,7 @@ const handleEditCpa = (agent: AgentData) => {
   selectedCpaAgent.value = {
     uid: agent.uid,
     account: agent.realName,
-    level: agent.accountType,
+    level: getAccountTypeLabel(agent.accountType),
     cpaLevel1: (agent as any).cpaLevel1 || 0,
     cpaLevel2: (agent as any).cpaLevel2 || 0,
     cpaLevel3: (agent as any).cpaLevel3 || 0,
@@ -213,7 +227,7 @@ const handleSaveCpa = (cpaData: any) => {
 }
 
 // --- Promotion Fund Modal Logic ---
-const promotionBalance = ref(25000) // Mock agent promotion fund balance in TWD
+const promotionBalance = ref(25000)
 const isPromotionModalShow = ref(false)
 const selectedAgentForPromotion = ref<any>(null)
 
@@ -229,7 +243,7 @@ const handlePromotionSubmit = (data: any) => {
   console.log('Agent Promotion submitted:', data)
   promotionBalance.value -= data.twdAmount
   isPromotionModalShow.value = false
-  alert(`成功派發 $${data.amount.toLocaleString()} 台幣給代理 ${data.uid}！`)
+  alert(t('promotion_modal.success_msg', { amount: data.amount.toLocaleString(), uid: data.uid }))
 }
 
 // --- Privacy / Desensitization Logic ---
@@ -255,24 +269,24 @@ const toggleMask = () => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 sm:space-y-6">
     <!-- Page Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">代理列表</h1>
-        <p class="text-sm text-slate-500 mt-1">管理代理商與配置、CPA 設定與業績概覽</p>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{{ t('agents.title') }}</h1>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">{{ t('agents.subtitle') }}</p>
       </div>
       <div class="flex items-center gap-4">
         <button 
           @click="handleAddAgent"
-          class="group relative inline-flex items-center gap-2 px-8 py-3 bg-cyan-500 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/30 hover:bg-cyan-600 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+          class="group relative inline-flex items-center gap-2 px-5 sm:px-8 py-2.5 sm:py-3 bg-cyan-500 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/30 hover:bg-cyan-600 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden w-full sm:w-auto justify-center"
         >
           <div class="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-[-30deg] -translate-x-full group-hover:animate-[shine_0.75s_ease-out]"></div>
           <div class="relative flex items-center gap-2">
             <div class="p-1 bg-white/20 rounded-lg group-hover:scale-110 transition-transform duration-300">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
             </div>
-            <span class="tracking-tight text-lg">新增代理</span>
+            <span class="tracking-tight text-base sm:text-lg">{{ t('agents.btn_add') }}</span>
           </div>
         </button>
       </div>
@@ -283,43 +297,44 @@ const toggleMask = () => {
 
     <!-- Data Table Card -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="px-6 py-4 flex items-center justify-between border-b border-slate-100">
+      <div class="px-4 sm:px-6 py-4 flex items-center justify-between border-b border-slate-100">
         <div class="flex items-center gap-3">
-          <h3 class="text-base font-semibold text-slate-800">搜尋結果</h3>
+          <h3 class="text-sm sm:text-base font-semibold text-slate-800">{{ t('agents.search_results') }}</h3>
           <button 
             @click="toggleMask" 
             class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-colors tooltip-trigger"
-            :title="isMasked ? '已脫敏 (點擊顯示資料)' : '顯示中 (點擊隱藏資料)'"
+            :title="isMasked ? t('agents.tooltip_masked') as string : t('agents.tooltip_unmasked') as string"
           >
             <svg v-if="isMasked" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88 3 3m6.12 11.12L3.12 20.88h17.76M21 21l-6.88-6.88M12 4.47a9 9 0 0 1 7.23 4.53m-1.2 5.07A9 9 0 0 1 4.77 12"/></svg>
             <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
-        <div class="text-sm text-slate-500">共 {{ agents.length }} 筆資料</div>
+        <div class="text-xs sm:text-sm text-slate-500">{{ t('agents.total_count', { count: agents.length }) }}</div>
       </div>
       
-      <div class="overflow-x-auto">
+      <!-- Desktop Table -->
+      <div class="hidden lg:block overflow-x-auto">
         <table class="w-full text-sm text-left whitespace-nowrap">
           <thead class="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-200">
             <tr>
-              <th scope="col" class="px-4 py-3 font-semibold">代理UID</th>
-              <th scope="col" class="px-4 py-3 font-semibold">帳號 / 身份類型</th>
-              <th scope="col" class="px-4 py-3 font-semibold">推廣碼</th>
-              <th scope="col" class="px-4 py-3 font-semibold text-center">CPA 矩陣</th>
-              <th scope="col" class="px-4 py-3 font-semibold text-right">儲值抽成</th>
-              <th scope="col" class="px-4 py-3 font-semibold text-right">下線總數</th>
-              <th scope="col" class="px-4 py-3 font-semibold text-right">玩家總數</th>
-              <th scope="col" class="px-4 py-3 font-semibold">真實姓名</th>
-              <th scope="col" class="px-4 py-3 font-semibold">手機號碼</th>
-              <th scope="col" class="px-4 py-3 font-semibold text-center">風控</th>
-              <th scope="col" class="px-4 py-3 font-semibold">狀態</th>
-              <th scope="col" class="px-4 py-3 font-semibold text-center sticky right-0 bg-slate-50 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">操作</th>
+              <th scope="col" class="px-4 py-3 font-semibold">{{ t('agents.col_uid') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold">{{ t('agents.col_account_type') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold">{{ t('agents.col_promo_code') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold text-center">{{ t('agents.col_cpa_matrix') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold text-right">{{ t('agents.col_deposit_commission') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold text-right">{{ t('agents.col_downline_agents') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold text-right">{{ t('agents.col_direct_players') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold">{{ t('agents.col_real_name') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold">{{ t('agents.col_phone') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold text-center">{{ t('agents.col_risk') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold">{{ t('agents.col_status') }}</th>
+              <th scope="col" class="px-4 py-3 font-semibold text-center sticky right-0 bg-slate-50 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">{{ t('agents.col_actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr v-for="agent in agents" :key="agent.id" class="hover:bg-slate-50/80 transition-colors">
               <td class="px-4 py-3 font-medium text-slate-900">{{ agent.uid }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ agent.accountType }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ getAccountTypeLabel(agent.accountType) }}</td>
               <td class="px-4 py-3">
                 <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-mono text-xs">{{ agent.promoCode }}</span>
               </td>
@@ -327,7 +342,7 @@ const toggleMask = () => {
                 <button 
                   @click="handleEditCpa(agent)"
                   class="p-2 rounded-xl transition-all hover:bg-slate-100 group/cpa tooltip-trigger"
-                  :title="agent.cpaMatrix ? '編輯 CPA 配置' : '初始 CPA 配置'"
+                  :title="agent.cpaMatrix ? t('agents.tooltip_edit_cpa') as string : t('agents.tooltip_init_cpa') as string"
                 >
                   <svg v-if="agent.cpaMatrix" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600 mx-auto transition-transform group-hover/cpa:scale-110"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
                   <div v-else class="w-5 h-5 border-2 border-dashed border-slate-300 rounded-md mx-auto flex items-center justify-center group-hover/cpa:border-emerald-500 group-hover/cpa:bg-emerald-50 transition-all">
@@ -358,14 +373,14 @@ const toggleMask = () => {
                   <button 
                     @click="handleEdit(agent)"
                     class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                    title="編輯"
+                    :title="t('agents.tooltip_edit') as string"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                   </button>
                   <button 
                     @click="handleOpenPromotion(agent)"
                     class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
-                    title="派發推廣金"
+                    :title="t('agents.tooltip_promotion') as string"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H4v4"/><path d="M2 12h20"/><path d="m20 12 1 4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2l1-4"/><path d="M12 18v4"/><path d="m9 20 3 2 3-2"/></svg>
                   </button>
@@ -375,15 +390,77 @@ const toggleMask = () => {
           </tbody>
         </table>
       </div>
+
+      <!-- Mobile Card Layout -->
+      <div class="lg:hidden divide-y divide-slate-100">
+        <div v-for="agent in agents" :key="agent.id" class="p-4 hover:bg-slate-50/80 transition-colors">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-bold text-slate-900 text-sm">{{ agent.uid }}</span>
+                <span 
+                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                  :class="getStatusColor(agent.status)"
+                >
+                  <span class="w-1 h-1 rounded-full mr-1" :class="agent.status === 'normal' ? 'bg-emerald-500' : agent.status === 'frozen' ? 'bg-amber-500' : 'bg-rose-500'"></span>
+                  {{ getStatusLabel(agent.status) }}
+                </span>
+                <svg v-if="agent.riskAnomaly" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-500"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              </div>
+              <div class="text-xs text-slate-500">{{ getAccountTypeLabel(agent.accountType) }} · {{ maskString(agent.realName, 'name') }}</div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button 
+                @click="handleEditCpa(agent)"
+                class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              </button>
+              <button 
+                @click="handleEdit(agent)"
+                class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+              </button>
+              <button 
+                @click="handleOpenPromotion(agent)"
+                class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H4v4"/><path d="M2 12h20"/><path d="m20 12 1 4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2l1-4"/><path d="M12 18v4"/><path d="m9 20 3 2 3-2"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded font-mono">{{ agent.promoCode }}</span>
+            <span class="text-slate-400">{{ maskString(agent.phone, 'phone') }}</span>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
+            <div class="flex-1 text-center">
+              <div class="text-xs text-slate-400 mb-0.5">{{ t('agents.card_downline') }}</div>
+              <div class="text-sm font-bold text-slate-700">{{ agent.downlineAgents }}</div>
+            </div>
+            <div class="w-px h-8 bg-slate-100"></div>
+            <div class="flex-1 text-center">
+              <div class="text-xs text-slate-400 mb-0.5">{{ t('agents.card_players') }}</div>
+              <div class="text-sm font-bold text-slate-700">{{ agent.directPlayers }}</div>
+            </div>
+            <div class="w-px h-8 bg-slate-100"></div>
+            <div class="flex-1 text-center">
+              <div class="text-xs text-slate-400 mb-0.5">{{ t('agents.card_commission') }}</div>
+              <div class="text-sm font-bold text-indigo-600">{{ agent.depositCommission }}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
       
-      <div class="px-6 py-4 flex items-center justify-between border-t border-slate-100 bg-slate-50/50">
-        <div class="text-sm text-slate-500">
-          顯示 1 到 {{ agents.length }} 筆，共 {{ agents.length }} 筆
+      <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50">
+        <div class="text-xs sm:text-sm text-slate-500">
+          {{ t('agents.pagination_showing', { start: 1, end: agents.length, total: agents.length }) }}
         </div>
         <div class="flex items-center gap-1">
-          <button class="px-3 py-1 text-sm border border-slate-200 rounded-md text-slate-400 cursor-not-allowed bg-white" disabled>上一頁</button>
+          <button class="px-3 py-1 text-sm border border-slate-200 rounded-md text-slate-400 cursor-not-allowed bg-white" disabled>{{ t('agents.pagination_prev') }}</button>
           <button class="px-3 py-1 text-sm border border-indigo-600 bg-indigo-600 text-white rounded-md">1</button>
-          <button class="px-3 py-1 text-sm border border-slate-200 rounded-md text-slate-600 hover:bg-slate-100 bg-white">下一頁</button>
+          <button class="px-3 py-1 text-sm border border-slate-200 rounded-md text-slate-600 hover:bg-slate-100 bg-white">{{ t('agents.pagination_next') }}</button>
         </div>
       </div>
     </div>

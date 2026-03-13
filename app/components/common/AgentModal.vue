@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 
 interface AgentData {
   id?: string;
@@ -52,6 +55,13 @@ const accountTypeOptions = [
   '一級代理',
   '助理帳號'
 ]
+
+// Map account type to i18n key
+const accountTypeKeyMap: Record<string, string> = {
+  '總代理': 'account_types.master_agent',
+  '一級代理': 'account_types.level1_agent',
+  '助理帳號': 'account_types.assistant'
+}
 
 watch(() => props.agent, (newAgent) => {
   if (newAgent && props.mode === 'edit') {
@@ -109,13 +119,13 @@ function handleSubmit() {
       <!-- Modal Content -->
       <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-200 flex flex-col max-h-[90vh]">
         <!-- Header -->
-        <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+        <div class="px-5 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div>
-            <h3 class="text-xl font-bold text-slate-900">
-              {{ mode === 'add' ? '新增代理帳號' : '編輯代理資訊' }}
+            <h3 class="text-lg sm:text-xl font-bold text-slate-900">
+              {{ mode === 'add' ? t('agent_modal.title_add') : t('agent_modal.title_edit') }}
             </h3>
-            <p class="text-sm text-slate-500 mt-1">
-              {{ mode === 'add' ? '請填寫下方資訊以建立新的代理帳號' : '修改現有代理的配置與聯絡資料' }}
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">
+              {{ mode === 'add' ? t('agent_modal.subtitle_add') : t('agent_modal.subtitle_edit') }}
             </p>
           </div>
           <button 
@@ -128,43 +138,43 @@ function handleSubmit() {
 
         <!-- Form Body -->
         <div class="overflow-y-auto max-h-[70vh] custom-scrollbar">
-          <form @submit.prevent="handleSubmit" class="p-8 space-y-6">
+          <form @submit.prevent="handleSubmit" class="p-5 sm:p-8 space-y-6">
           <!-- Account & Password -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                登入帳號 <span class="text-rose-500">*</span>
+                {{ t('agent_modal.label_account') }} <span class="text-rose-500">*</span>
               </label>
               <input 
                 v-model="form.account"
                 type="text"
                 required
-                placeholder="請輸入帳號"
+                :placeholder="t('agent_modal.placeholder_account') as string"
                 class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
               >
             </div>
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                登入密碼 <span v-if="mode === 'add'" class="text-rose-500">*</span>
+                {{ t('agent_modal.label_password') }} <span v-if="mode === 'add'" class="text-rose-500">*</span>
               </label>
               <input 
                 v-model="form.password"
                 type="password"
                 :required="mode === 'add'"
-                :placeholder="mode === 'add' ? '請輸入密碼' : '留空則不修改'"
+                :placeholder="mode === 'add' ? t('agent_modal.placeholder_password_add') as string : t('agent_modal.placeholder_password_edit') as string"
                 class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
               >
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <!-- Account Type -->
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                帳號類型 <span v-if="mode === 'edit'" class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded ml-auto">不可修改</span>
+                {{ t('agent_modal.label_account_type') }} <span v-if="mode === 'edit'" class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded ml-auto">{{ t('agent_modal.label_not_editable') }}</span>
               </label>
               <select 
                 v-model="form.accountType"
@@ -172,7 +182,7 @@ function handleSubmit() {
                 :disabled="mode === 'edit'"
                 class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 disabled:bg-slate-50 disabled:text-slate-900 disabled:font-bold transition-all text-sm outline-none appearance-none"
               >
-                <option v-for="opt in accountTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
+                <option v-for="opt in accountTypeOptions" :key="opt" :value="opt">{{ t(accountTypeKeyMap[opt] || opt) }}</option>
               </select>
             </div>
 
@@ -180,7 +190,7 @@ function handleSubmit() {
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                代理 UID (系統生成)
+                {{ t('agent_modal.label_uid') }}
               </label>
               <input 
                 v-model="form.uid"
@@ -196,13 +206,13 @@ function handleSubmit() {
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                推廣碼
+                {{ t('agent_modal.label_promo_code') }}
               </label>
               <input 
                 v-model="form.promoCode"
                 type="text"
                 required
-                placeholder="例如: VIP888"
+                :placeholder="t('agent_modal.placeholder_promo') as string"
                 class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
               >
             </div>
@@ -211,13 +221,13 @@ function handleSubmit() {
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                真實姓名
+                {{ t('agent_modal.label_real_name') }}
               </label>
               <input 
                 v-model="form.realName"
                 type="text"
                 required
-                placeholder="輸入完整姓名"
+                :placeholder="t('agent_modal.placeholder_name') as string"
                 class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
               >
             </div>
@@ -226,13 +236,13 @@ function handleSubmit() {
             <div class="space-y-2">
               <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                手機號碼
+                {{ t('agent_modal.label_phone') }}
               </label>
               <input 
                 v-model="form.phone"
                 type="tel"
                 required
-                placeholder="例如: 0912345678"
+                :placeholder="t('agent_modal.placeholder_phone') as string"
                 class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
               >
             </div>
@@ -240,12 +250,12 @@ function handleSubmit() {
               <div class="space-y-2">
                 <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                   <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                  聯絡方式
+                  {{ t('agent_modal.label_contact') }}
                 </label>
                 <input 
                   v-model="form.contact"
                   type="text"
-                  placeholder="例如: Line: @wang123"
+                  :placeholder="t('agent_modal.placeholder_contact') as string"
                   class="w-full h-11 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
                 >
               </div>
@@ -254,7 +264,7 @@ function handleSubmit() {
               <div class="space-y-2">
                 <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
                   <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-                  2FA 雙重驗證
+                  {{ t('agent_modal.label_2fa') }}
                 </label>
                 <div 
                   @click="form.is2faEnabled = !form.is2faEnabled"
@@ -281,21 +291,21 @@ function handleSubmit() {
           <div v-if="mode === 'add'" class="pt-6 border-t border-slate-100">
             <div class="flex items-center gap-2 mb-6 text-indigo-600">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <h4 class="font-bold">CPA 與抽成配置</h4>
+              <h4 class="font-bold">{{ t('agent_modal.cpa_config_title') }}</h4>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <!-- CPA Levels -->
               <div v-for="l in [1, 2, 3]" :key="l" class="space-y-2">
                 <label class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                  CPA 級距 {{ l }}
+                  {{ t('agent_modal.cpa_level', { level: l }) }}
                 </label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
                   <input 
                     v-model.number="form['cpaLevel' + l as keyof AgentData]"
                     type="number"
-                    placeholder="單價"
+                    :placeholder="t('agent_modal.placeholder_price') as string"
                     class="w-full h-10 pl-6 pr-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
                   >
                 </div>
@@ -305,7 +315,7 @@ function handleSubmit() {
             <!-- Commission Ratio -->
             <div class="mt-6 p-4 bg-slate-50 rounded-2xl space-y-4">
               <div class="flex items-center justify-between">
-                <label class="text-sm font-bold text-slate-700">下線儲值抽成分配率 (%)</label>
+                <label class="text-sm font-bold text-slate-700">{{ t('agent_modal.commission_ratio') }}</label>
                 <div class="relative w-20">
                   <input 
                     v-model.number="form.commissionRatio"
@@ -325,7 +335,7 @@ function handleSubmit() {
                 class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
               >
               <p class="text-[10px] text-slate-400 font-medium">
-                * 設定給下線的抽成比例，100% 代表平級撥發。
+                {{ t('agent_modal.commission_note') }}
               </p>
             </div>
           </div>
@@ -334,16 +344,16 @@ function handleSubmit() {
           <div v-if="mode === 'edit'" class="pt-6 border-t border-slate-100">
             <div class="flex items-center gap-2 mb-6 text-slate-700">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
-              <h4 class="font-bold">帳號狀態管理</h4>
+              <h4 class="font-bold">{{ t('agent_modal.status_management') }}</h4>
             </div>
 
-            <div class="flex gap-4">
+            <div class="flex gap-3 sm:gap-4">
               <button 
                 v-for="s in (['normal', 'frozen', 'disabled'] as const)" 
                 :key="s"
                 type="button"
                 @click="form.status = s"
-                class="flex-1 py-3 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1 group"
+                class="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-1 group"
                 :class="form.status === s ? {
                   'border-emerald-500 bg-emerald-50': s === 'normal',
                   'border-amber-500 bg-amber-50': s === 'frozen',
@@ -355,12 +365,12 @@ function handleSubmit() {
                   'bg-amber-500': s === 'frozen',
                   'bg-rose-500': s === 'disabled'
                 }"></div>
-                <span class="text-xs font-bold" :class="form.status === s ? {
+                <span class="text-[10px] sm:text-xs font-bold" :class="form.status === s ? {
                   'text-emerald-700': s === 'normal',
                   'text-amber-700': s === 'frozen',
                   'text-rose-700': s === 'disabled'
                 } : 'text-slate-500'">
-                  {{ s === 'normal' ? '正常運作' : s === 'frozen' ? '暫時凍結' : '強制停用' }}
+                  {{ s === 'normal' ? t('agent_modal.status_normal') : s === 'frozen' ? t('agent_modal.status_frozen') : t('agent_modal.status_disabled') }}
                 </span>
               </button>
             </div>
@@ -370,12 +380,12 @@ function handleSubmit() {
           <div class="space-y-2">
             <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
               <span class="w-1 h-3 bg-indigo-500 rounded-full"></span>
-              備註
+              {{ t('agent_modal.label_remark') }}
             </label>
             <textarea 
               v-model="form.remark"
               rows="3"
-              placeholder="輸入任何相關備註..."
+              :placeholder="t('agent_modal.placeholder_remark') as string"
               class="w-full p-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none resize-none"
             ></textarea>
           </div>
@@ -383,19 +393,19 @@ function handleSubmit() {
         </div>
 
         <!-- Sticky Footer -->
-        <div class="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 shrink-0">
+        <div class="px-5 sm:px-8 py-4 sm:py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 shrink-0">
           <button 
             type="button"
             @click="handleClose"
-            class="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
+            class="px-5 sm:px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
           >
-            取消
+            {{ t('agent_modal.btn_cancel') }}
           </button>
           <button 
             @click="handleSubmit"
-            class="px-10 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/20 transform transition-all hover:-translate-y-0.5 active:scale-95"
+            class="px-6 sm:px-10 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/20 transform transition-all hover:-translate-y-0.5 active:scale-95"
           >
-            確認{{ mode === 'add' ? '新增' : '儲存' }}
+            {{ mode === 'add' ? t('agent_modal.btn_confirm_add') : t('agent_modal.btn_confirm_save') }}
           </button>
         </div>
       </div>

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValueStart: string
@@ -18,7 +21,7 @@ const tempEnd = ref<string | null>(props.modelValueEnd || null)
 
 // --- Display Logic ---
 const displayValue = computed(() => {
-  if (!props.modelValueStart && !props.modelValueEnd) return '選擇日期範圍'
+  if (!props.modelValueStart && !props.modelValueEnd) return t('common.select_date_range')
   return `${props.modelValueStart} ~ ${props.modelValueEnd}`
 })
 
@@ -44,7 +47,10 @@ const daysInMonth = computed(() => {
 })
 
 const monthLabel = computed(() => {
-  return `${currentMonth.value.getFullYear()}年 ${currentMonth.value.getMonth() + 1}月`
+  return t('common.calendar_month_year', { 
+    year: currentMonth.value.getFullYear(), 
+    month: currentMonth.value.getMonth() + 1 
+  })
 })
 
 const nextMonth = () => currentMonth.value = new Date(currentMonth.value.setMonth(currentMonth.value.getMonth() + 1))
@@ -121,11 +127,11 @@ onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
 
       <!-- Days Table -->
       <div class="grid grid-cols-7 gap-1">
-        <div v-for="d in ['日', '一', '二', '三', '四', '五', '六']" :key="d" class="text-center text-[10px] font-black text-slate-400 py-1 uppercase tracking-wider">
+        <div v-for="d in (t('common.calendar_days') as any)" :key="d" class="text-center text-[10px] font-black text-slate-400 py-1 uppercase tracking-wider">
           {{ d }}
         </div>
         <div 
-          v-for="(date, idx) in daysInMonth" 
+          v-for="(date, idx) in (daysInMonth as any[])" 
           :key="idx"
           @click="date.day ? selectDate(date.dateStr) : null"
           :class="[
@@ -137,20 +143,20 @@ onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside))
         >
           {{ date.day }}
           <!-- Range start/end indicators -->
-          <div v-if="date.dateStr === tempStart && tempEnd" class="absolute inset-y-0 right-0 w-1/2 bg-indigo-50 -z-10"></div>
-          <div v-if="date.dateStr === tempEnd" class="absolute inset-y-0 left-0 w-1/2 bg-indigo-50 -z-10"></div>
+          <div v-if="date.dateStr && date.dateStr === tempStart && tempEnd" class="absolute inset-y-0 right-0 w-1/2 bg-indigo-50 -z-10"></div>
+          <div v-if="date.dateStr && date.dateStr === tempEnd" class="absolute inset-y-0 left-0 w-1/2 bg-indigo-50 -z-10"></div>
         </div>
       </div>
 
       <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center px-1">
-        <div class="text-[10px] text-slate-400 font-medium">點擊兩次以設定範圍</div>
+        <div class="text-[10px] text-slate-400 font-medium">{{ t('common.calendar_instruction') }}</div>
         <button 
           v-if="tempStart && tempEnd"
           type="button" 
           @click="isOpen = false"
           class="text-xs font-bold text-indigo-600 hover:text-indigo-700"
         >
-          查看結果
+          {{ t('common.view_results') }}
         </button>
       </div>
     </div>

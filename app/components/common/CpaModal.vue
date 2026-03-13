@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 
 interface CpaData {
   uid: string;
@@ -10,7 +13,7 @@ interface CpaData {
   cpaLevel2: number;
   cpaLevel3: number;
   commissionRatio: number;
-  capCpa: number; // The limit from superior
+  capCpa: number;
 }
 
 const props = defineProps<{
@@ -80,15 +83,15 @@ const handleSubmit = () => {
       <!-- Modal Content -->
       <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-200 flex flex-col max-h-[90vh]">
         <!-- Header -->
-        <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-emerald-600 text-white relative overflow-hidden">
+        <div class="px-5 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-emerald-600 text-white relative overflow-hidden">
           <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
           <div class="relative z-10">
-            <h3 class="text-xl font-bold">CPA 級距配置</h3>
-            <div class="flex items-center gap-4 mt-1 text-emerald-50 text-xs">
-              <span class="font-bold">目標：{{ agentData.account }}</span>
-              <span class="opacity-70">|</span>
+            <h3 class="text-lg sm:text-xl font-bold">{{ t('cpa_modal.title') }}</h3>
+            <div class="flex items-center gap-2 sm:gap-4 mt-1 text-emerald-50 text-xs flex-wrap">
+              <span class="font-bold">{{ t('cpa_modal.label_target') }}：{{ agentData.account }}</span>
+              <span class="opacity-70 hidden sm:inline">|</span>
               <span class="font-mono">ID: {{ agentData.uid }}</span>
-              <span class="px-2 py-0.5 bg-white/20 rounded-full font-bold ml-2">{{ agentData.level }}</span>
+              <span class="px-2 py-0.5 bg-white/20 rounded-full font-bold">{{ agentData.level }}</span>
             </div>
           </div>
           <button 
@@ -100,19 +103,19 @@ const handleSubmit = () => {
         </div>
 
         <!-- Body -->
-        <div class="p-8 overflow-y-auto max-h-[70vh] space-y-8 custom-scrollbar">
+        <div class="p-5 sm:p-8 overflow-y-auto max-h-[70vh] space-y-6 sm:space-y-8 custom-scrollbar">
           <!-- CPA Reward Matrix -->
-          <div class="space-y-6">
+          <div class="space-y-4 sm:space-y-6">
             <div class="flex items-center gap-2 text-emerald-600">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <h4 class="font-bold">CPA 級距單價 ($)</h4>
+              <h4 class="font-bold">{{ t('cpa_modal.cpa_unit_price') }}</h4>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <div v-for="l in [1, 2, 3]" :key="l" class="space-y-2">
                 <div class="flex items-center justify-between">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase">級距 {{ l }}</label>
-                  <span class="text-[10px] text-slate-400 font-bold">上限：${{ agentData.capCpa }}</span>
+                  <label class="text-[11px] font-bold text-slate-500 uppercase">{{ t('cpa_modal.level', { level: l }) }}</label>
+                  <span class="text-[10px] text-slate-400 font-bold">{{ t('cpa_modal.cap_limit', { cap: agentData.capCpa }) }}</span>
                 </div>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-xs">$</span>
@@ -125,22 +128,22 @@ const handleSubmit = () => {
                 </div>
                 <!-- Validation Error -->
                 <p v-if="form['cpaLevel' + l as keyof typeof form] > agentData.capCpa" class="text-[10px] text-rose-500 font-bold">
-                  不得超過上限 ${{ agentData.capCpa }}
+                  {{ t('cpa_modal.cap_exceeded', { cap: agentData.capCpa }) }}
                 </p>
               </div>
             </div>
           </div>
 
           <!-- Commission Allocation -->
-          <div class="space-y-6 pt-8 border-t border-slate-100">
+          <div class="space-y-4 sm:space-y-6 pt-6 sm:pt-8 border-t border-slate-100">
             <div class="flex items-center gap-2 text-indigo-600">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-              <h4 class="font-bold">儲值抽成分配率 (%)</h4>
+              <h4 class="font-bold">{{ t('cpa_modal.commission_title') }}</h4>
             </div>
 
-            <div class="p-6 bg-indigo-50/50 border border-indigo-100/50 rounded-2xl space-y-6">
+            <div class="p-4 sm:p-6 bg-indigo-50/50 border border-indigo-100/50 rounded-2xl space-y-4 sm:space-y-6">
               <div class="flex items-center justify-between">
-                <label class="text-sm font-bold text-slate-700">分配給下線比例</label>
+                <label class="text-sm font-bold text-slate-700">{{ t('cpa_modal.commission_label') }}</label>
                 <div class="flex items-center gap-2">
                   <input 
                     v-model.number="form.commissionRatio"
@@ -165,7 +168,7 @@ const handleSubmit = () => {
                 <div class="flex justify-between text-[10px] font-bold text-slate-400">
                   <span>0%</span>
                   <span>50%</span>
-                  <span>100% (最高)</span>
+                  <span>{{ t('cpa_modal.commission_max') }}</span>
                 </div>
               </div>
             </div>
@@ -174,28 +177,28 @@ const handleSubmit = () => {
         </div>
 
         <!-- Footer -->
-        <div class="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+        <div class="px-5 sm:px-8 py-4 sm:py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
           <button 
             @click="isHistoryShow = true"
-            class="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+            class="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
-            變更紀錄
+            {{ t('cpa_modal.history_btn') }}
           </button>
           
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 sm:gap-3">
             <button 
               @click="handleClose"
-              class="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-200"
+              class="px-4 sm:px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-200"
             >
-              取消
+              {{ t('cpa_modal.btn_cancel') }}
             </button>
             <button 
               @click="handleSubmit"
               :disabled="!isCpaValid"
-              class="px-10 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/20 transform transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+              class="px-6 sm:px-10 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/20 transform transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
             >
-              <span>儲存配置</span>
+              <span>{{ t('cpa_modal.btn_save') }}</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </button>
           </div>
@@ -204,10 +207,10 @@ const handleSubmit = () => {
         <!-- History Sidebar (Slide-over within modal) -->
         <Transition name="slide">
           <div v-if="isHistoryShow" class="absolute inset-0 z-20 bg-white/95 backdrop-blur-md flex flex-col">
-            <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between shrink-0">
-              <h4 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <div class="px-5 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <h4 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
-                CPA 變更紀錄
+                {{ t('cpa_modal.history_title') }}
               </h4>
               <button 
                 @click="isHistoryShow = false"
@@ -217,26 +220,26 @@ const handleSubmit = () => {
               </button>
             </div>
             
-            <div class="flex-1 p-8 overflow-y-auto custom-scrollbar space-y-6">
+            <div class="flex-1 p-5 sm:p-8 overflow-y-auto custom-scrollbar space-y-6">
               <div v-for="(record, idx) in historyRecords" :key="idx" class="relative pl-8 pb-6 border-l-2 border-indigo-100 last:border-0 last:pb-0">
                 <div class="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-white border-4 border-indigo-500 shadow-sm"></div>
                 <div class="text-xs font-bold text-slate-400 mb-1 font-mono">{{ record.date }}</div>
-                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <div class="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">{{ record.action }}</span>
-                    <span class="text-xs text-slate-500 font-medium">操作人: {{ record.admin }}</span>
+                    <span class="text-xs text-slate-500 font-medium">{{ t('cpa_modal.history_operator') }}: {{ record.admin }}</span>
                   </div>
                   <p class="text-sm text-slate-600 leading-relaxed">{{ record.details }}</p>
                 </div>
               </div>
             </div>
             
-            <div class="px-8 py-6 border-t border-slate-100 flex items-center justify-center bg-slate-50/30">
+            <div class="px-5 sm:px-8 py-4 sm:py-6 border-t border-slate-100 flex items-center justify-center bg-slate-50/30">
               <button 
                 @click="isHistoryShow = false" 
                 class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold rounded-xl transition-all"
               >
-                關閉紀錄
+                {{ t('cpa_modal.history_close') }}
               </button>
             </div>
           </div>

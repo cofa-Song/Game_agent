@@ -2,6 +2,9 @@
 import { ref, computed } from 'vue'
 import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 import DateRangePicker from '~/components/common/DateRangePicker.vue'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 
 // --- Types ---
 type WalletType = 'promotion' | 'commission' | 'frozen'
@@ -136,22 +139,22 @@ const formatCurrency = (val: number) => {
 
 const getWalletLabel = (type: WalletType) => {
   switch (type) {
-    case 'promotion': return { label: '推廣金', class: 'text-indigo-600 bg-indigo-50 border-indigo-100' }
-    case 'commission': return { label: '佣金', class: 'text-emerald-600 bg-emerald-50 border-emerald-100' }
-    case 'frozen': return { label: '凍結佣金', class: 'text-amber-600 bg-amber-50 border-amber-100' }
+    case 'promotion': return { label: t('finance_types.wallet_promotion'), class: 'text-indigo-600 bg-indigo-50 border-indigo-100' }
+    case 'commission': return { label: t('finance_types.wallet_commission'), class: 'text-emerald-600 bg-emerald-50 border-emerald-100' }
+    case 'frozen': return { label: t('finance_types.wallet_frozen'), class: 'text-amber-600 bg-amber-50 border-amber-100' }
   }
 }
 
 const getTypeLabel = (type: TxType) => {
   const configs: Record<TxType, { label: string, icon: string }> = {
-    cpa: { label: 'CPA 撥入', icon: '💰' },
-    revenue: { label: '儲值抽成', icon: '📈' },
-    promo_dist: { label: '推廣金派發', icon: '🎁' },
-    withdraw_freeze: { label: '提領凍結', icon: '🔒' },
-    audit_deduct: { label: '銷帳扣減', icon: '💸' },
-    reject_return: { label: '駁回退還', icon: '↩️' }
+    cpa: { label: t('finance_types.type_cpa'), icon: '💰' },
+    revenue: { label: t('finance_types.type_revenue'), icon: '📈' },
+    promo_dist: { label: t('finance_types.type_promo_dist'), icon: '🎁' },
+    withdraw_freeze: { label: t('finance_types.type_withdraw_freeze'), icon: '🔒' },
+    audit_deduct: { label: t('finance_types.type_audit_deduct'), icon: '💸' },
+    reject_return: { label: t('finance_types.type_reject_return'), icon: '↩️' }
   }
-  return configs[type] || { label: '未知', icon: '❓' }
+  return configs[type] || { label: t('finance_types.type_unknown'), icon: '❓' }
 }
 </script>
 
@@ -160,8 +163,8 @@ const getTypeLabel = (type: TxType) => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">錢包異動日誌</h1>
-        <p class="text-sm text-slate-500 mt-1">追蹤所有錢包帳戶的資金流向，包括獎項發放、提領異動與系統結算</p>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{ t('finance.title') }}</h1>
+        <p class="text-sm text-slate-500 mt-1">{{ t('finance.subtitle') }}</p>
       </div>
     </div>
 
@@ -182,10 +185,10 @@ const getTypeLabel = (type: TxType) => {
             v-model="filterWallet"
             class="h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
           >
-            <option value="all">所有錢包</option>
-            <option value="promotion">推廣金</option>
-            <option value="commission">佣金</option>
-            <option value="frozen">凍結佣金</option>
+            <option value="all">{{ t('finance.filter_all_wallets') }}</option>
+            <option value="promotion">{{ t('finance_types.wallet_promotion') }}</option>
+            <option value="commission">{{ t('finance_types.wallet_commission') }}</option>
+            <option value="frozen">{{ t('finance_types.wallet_frozen') }}</option>
           </select>
 
           <!-- Type Filter -->
@@ -193,18 +196,18 @@ const getTypeLabel = (type: TxType) => {
             v-model="filterType"
             class="h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
           >
-            <option value="all">所有交易類型</option>
-            <option value="cpa">CPA 撥入</option>
-            <option value="revenue">儲值抽成</option>
-            <option value="promo_dist">推廣金派發</option>
-            <option value="withdraw_freeze">提領凍結</option>
-            <option value="audit_deduct">銷帳扣減</option>
-            <option value="reject_return">駁回退還</option>
+            <option value="all">{{ t('finance.filter_all_types') }}</option>
+            <option value="cpa">{{ t('finance_types.type_cpa') }}</option>
+            <option value="revenue">{{ t('finance_types.type_revenue') }}</option>
+            <option value="promo_dist">{{ t('finance_types.type_promo_dist') }}</option>
+            <option value="withdraw_freeze">{{ t('finance_types.type_withdraw_freeze') }}</option>
+            <option value="audit_deduct">{{ t('finance_types.type_audit_deduct') }}</option>
+            <option value="reject_return">{{ t('finance_types.type_reject_return') }}</option>
           </select>
         </div>
 
         <div class="text-xs text-slate-400 font-medium whitespace-nowrap">
-          共 {{ filteredLogs.length }} 筆符合條件
+          {{ t('finance.stats_count', { count: filteredLogs.length }) }}
         </div>
       </div>
 
@@ -213,13 +216,13 @@ const getTypeLabel = (type: TxType) => {
         <table class="w-full text-sm text-left whitespace-nowrap">
           <thead class="text-xs text-slate-500 bg-slate-50/80 uppercase border-b border-slate-200">
             <tr>
-              <th class="px-6 py-4 font-bold">交易流水號 / 時間</th>
-              <th class="px-6 py-4 font-bold">目標錢包</th>
-              <th class="px-6 py-4 font-bold">交易類型</th>
-              <th class="px-6 py-4 font-bold text-right">變更前餘額</th>
-              <th class="px-6 py-4 font-bold text-right">異動金額</th>
-              <th class="px-6 py-4 font-bold text-right">變更後餘額</th>
-              <th class="px-6 py-4 font-bold text-center">詳情</th>
+              <th class="px-6 py-4 font-bold">{{ t('finance.col_id_time') }}</th>
+              <th class="px-6 py-4 font-bold">{{ t('finance.col_wallet') }}</th>
+              <th class="px-6 py-4 font-bold">{{ t('finance.col_type') }}</th>
+              <th class="px-6 py-4 font-bold text-right">{{ t('finance.col_before') }}</th>
+              <th class="px-6 py-4 font-bold text-right">{{ t('finance.col_change') }}</th>
+              <th class="px-6 py-4 font-bold text-right">{{ t('finance.col_after') }}</th>
+              <th class="px-6 py-4 font-bold text-center">{{ t('finance.col_details') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -227,7 +230,7 @@ const getTypeLabel = (type: TxType) => {
               <td colspan="7" class="px-6 py-20 text-center text-slate-400">
                 <div class="flex flex-col items-center justify-center gap-3">
                   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-slate-200"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></svg>
-                  <p class="text-sm font-medium">查無異動紀錄</p>
+                  <p class="text-sm font-medium">{{ t('finance.empty_state') }}</p>
                 </div>
               </td>
             </tr>
@@ -273,7 +276,7 @@ const getTypeLabel = (type: TxType) => {
               </td>
               <td class="px-6 py-4 text-center">
                 <button class="p-1 px-3 text-xs font-bold text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent">
-                  檢視詳情
+                  {{ t('finance.btn_view') }}
                 </button>
               </td>
             </tr>
@@ -283,7 +286,7 @@ const getTypeLabel = (type: TxType) => {
 
       <!-- Footer -->
       <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/30 text-xs text-slate-500 flex justify-between items-center">
-        <span>顯示第 1 到 {{ filteredLogs.length }} 筆資料</span>
+        <span>{{ t('finance.pagination_info', { start: 1, end: filteredLogs.length }) }}</span>
       </div>
     </div>
 
@@ -295,7 +298,7 @@ const getTypeLabel = (type: TxType) => {
           <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] relative z-10 overflow-hidden transform transition-all border border-slate-200 flex flex-col">
             <!-- Header -->
             <div class="px-6 py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <h3 class="text-lg font-black text-slate-800">異動詳情</h3>
+              <h3 class="text-lg font-black text-slate-800">{{ t('finance.modal_title') }}</h3>
               <button @click="isModalOpen = false" class="p-2 text-slate-400 hover:bg-white rounded-full transition-colors border border-transparent hover:border-slate-200">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>
@@ -306,14 +309,14 @@ const getTypeLabel = (type: TxType) => {
               <!-- Summary -->
               <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <div class="flex flex-col">
-                  <span class="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">交易類型</span>
+                  <span class="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">{{ t('finance.col_type') }}</span>
                   <span class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                     <span class="text-xl">{{ getTypeLabel(selectedLog.type).icon }}</span>
                     {{ getTypeLabel(selectedLog.type).label }}
                   </span>
                 </div>
                 <div class="text-right flex flex-col">
-                  <span class="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">目標錢包</span>
+                  <span class="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">{{ t('finance.col_wallet') }}</span>
                   <span 
                     class="px-2 py-0.5 rounded-full text-[10px] font-black border self-end"
                     :class="getWalletLabel(selectedLog.walletType).class"
@@ -326,12 +329,12 @@ const getTypeLabel = (type: TxType) => {
               <!-- Value Comparison -->
               <div class="grid grid-cols-1 gap-3 relative">
                 <div class="flex justify-between items-center px-4 py-3 bg-white border border-slate-100 rounded-xl">
-                  <span class="text-xs font-bold text-slate-500">變更前</span>
+                  <span class="text-xs font-bold text-slate-500">{{ t('finance.col_before') }}</span>
                   <span class="font-mono font-bold text-slate-700">${{ formatCurrency(selectedLog.before) }}</span>
                 </div>
                 
                 <div class="flex justify-between items-center px-4 py-4 bg-slate-900 rounded-xl shadow-lg ring-4 ring-indigo-500/10">
-                  <span class="text-xs font-bold text-indigo-300">異動金額</span>
+                  <span class="text-xs font-bold text-indigo-300">{{ t('finance.col_change') }}</span>
                   <span 
                     class="font-black font-mono text-xl"
                     :class="selectedLog.change > 0 ? 'text-emerald-400' : 'text-rose-400'"
@@ -341,7 +344,7 @@ const getTypeLabel = (type: TxType) => {
                 </div>
 
                 <div class="flex justify-between items-center px-4 py-3 bg-white border border-slate-100 rounded-xl">
-                  <span class="text-xs font-bold text-slate-500">變更後</span>
+                  <span class="text-xs font-bold text-slate-500">{{ t('finance.col_after') }}</span>
                   <span class="font-mono font-black text-indigo-600">${{ formatCurrency(selectedLog.after) }}</span>
                 </div>
               </div>
@@ -349,22 +352,22 @@ const getTypeLabel = (type: TxType) => {
               <!-- Meta Info -->
               <div class="space-y-4 pt-2">
                 <div class="flex justify-between items-center text-sm border-b border-slate-100 pb-3">
-                  <span class="text-slate-500 font-medium">交易流水號</span>
+                  <span class="text-slate-500 font-medium">{{ t('finance.col_txn_id') }}</span>
                   <span class="font-mono font-bold text-slate-800">{{ selectedLog.id }}</span>
                 </div>
                 <div class="flex justify-between items-center text-sm border-b border-slate-100 pb-3">
-                  <span class="text-slate-500 font-medium">變更時間</span>
+                  <span class="text-slate-500 font-medium">{{ t('finance.col_txn_time') }}</span>
                   <span class="font-bold text-slate-700">{{ selectedLog.time }}</span>
                 </div>
                 <div class="flex justify-between items-center text-sm border-b border-slate-100 pb-3">
-                  <span class="text-slate-500 font-medium">操作人員</span>
+                  <span class="text-slate-500 font-medium">{{ t('finance.label_modifier') }}</span>
                   <span class="flex items-center gap-1.5 font-bold text-indigo-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     {{ selectedLog.modifier }}
                   </span>
                 </div>
                 <div class="space-y-1.5">
-                  <span class="text-xs font-bold text-slate-500">原因 / 備註</span>
+                  <span class="text-xs font-bold text-slate-500">{{ t('finance.label_reason') }}</span>
                   <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 text-sm text-slate-700 leading-relaxed italic">
                     "{{ selectedLog.reason }}"
                   </div>
@@ -378,7 +381,7 @@ const getTypeLabel = (type: TxType) => {
                 @click="isModalOpen = false"
                 class="w-full py-3 bg-white border border-slate-200 rounded-xl font-black text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
               >
-                關閉視窗
+                {{ t('finance.modal_close') }}
               </button>
             </div>
           </div>

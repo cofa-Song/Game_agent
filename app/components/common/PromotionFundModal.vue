@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   show: boolean
@@ -9,14 +12,14 @@ const props = defineProps<{
     uid: string
     account: string
   } | null
-  promotionBalance: number // Your current TWD balance
+  promotionBalance: number
 }>()
 
 const emit = defineEmits(['close', 'submit'])
 
 const title = ref('')
 const content = ref('')
-const amountValue = ref<number | null>(null) // This is Silver for players, TWD for agents
+const amountValue = ref<number | null>(null)
 
 // Conversion logic
 const twdEquivalent = computed(() => {
@@ -75,17 +78,17 @@ const handleSubmit = () => {
       <!-- Modal Content -->
       <div class="relative w-full max-w-md max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-100 flex flex-col">
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div class="px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <div>
-            <h3 class="text-xl font-black text-slate-900 tracking-tight">派發推廣金</h3>
+            <h3 class="text-lg sm:text-xl font-black text-slate-900 tracking-tight">{{ t('promotion_modal.title') }}</h3>
             <p v-if="playerData" class="text-xs text-slate-400 mt-1 uppercase font-bold tracking-wider">
-              對象: {{ playerData.uid }} ({{ playerData.account }})
+              {{ t('promotion_modal.label_target') }}: {{ playerData.uid }} ({{ playerData.account }})
             </p>
           </div>
           
           <!-- Promotion Balance Badge -->
           <div class="flex flex-col items-end">
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">推廣金餘額</span>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{{ t('promotion_modal.label_balance') }}</span>
             <div class="flex items-center gap-1.5 text-indigo-600 font-black text-lg">
               <span class="text-sm font-medium">$</span>
               {{ promotionBalance.toLocaleString() }}
@@ -94,17 +97,17 @@ const handleSubmit = () => {
         </div>
 
         <!-- Form body -->
-        <div class="p-6 space-y-5">
+        <div class="p-5 sm:p-6 space-y-5">
           <!-- Title -->
           <div v-if="mode === 'player'" class="space-y-2">
             <label class="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
               <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-              訊息標題
+              {{ t('promotion_modal.label_msg_title') }}
             </label>
             <input 
               v-model="title"
               type="text" 
-              placeholder="例如: 週末儲值驚喜禮"
+              :placeholder="t('promotion_modal.placeholder_title') as string"
               class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm font-medium outline-none"
             >
           </div>
@@ -113,12 +116,12 @@ const handleSubmit = () => {
           <div v-if="mode === 'player'" class="space-y-2">
             <label class="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
               <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-              訊息內容
+              {{ t('promotion_modal.label_msg_content') }}
             </label>
             <textarea 
               v-model="content"
               rows="3"
-              placeholder="請輸入派發規則或祝福語..."
+              :placeholder="t('promotion_modal.placeholder_content') as string"
               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm font-medium outline-none resize-none"
             ></textarea>
           </div>
@@ -127,7 +130,7 @@ const handleSubmit = () => {
           <div class="space-y-2">
             <label class="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
               <div class="w-1.5 h-1.5 rounded-full" :class="mode === 'player' ? 'bg-amber-500' : 'bg-emerald-500'"></div>
-              派發{{ mode === 'player' ? '銀幣' : '台幣' }}數量
+              {{ mode === 'player' ? t('promotion_modal.label_amount_silver') : t('promotion_modal.label_amount_twd') }}
             </label>
             <div class="relative">
               <input 
@@ -147,14 +150,14 @@ const handleSubmit = () => {
             <div class="flex items-start justify-between mt-2">
               <p v-if="mode === 'player'" class="text-[11px] text-slate-400 font-bold">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                台幣兌換銀幣匯率 1 : 100
+                {{ t('promotion_modal.exchange_tip') }}
               </p>
               <p v-else class="text-[11px] text-slate-400 font-bold">
-                這是一份推廣補助金，將直接計入代理的推廣餘額
+                {{ t('promotion_modal.agent_tip') }}
               </p>
 
               <div v-if="amountValue && mode === 'player'" class="text-right">
-                <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-tighter">台幣對價</span>
+                <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-tighter">{{ t('promotion_modal.twd_equivalent') }}</span>
                 <span :class="isOverBalance ? 'text-rose-600 font-black' : 'text-indigo-600 font-bold'">
                   ${{ twdEquivalent.toLocaleString() }}
                 </span>
@@ -164,18 +167,18 @@ const handleSubmit = () => {
             <!-- Error Message -->
             <div v-if="isOverBalance" class="mt-3 p-3 bg-rose-100 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 animate-shake">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span class="text-xs font-black">餘額不足！目前的推廣金不足以派發此數量。</span>
+              <span class="text-xs font-black">{{ t('promotion_modal.error_insufficient') }}</span>
             </div>
           </div>
         </div>
 
         <!-- Footer Actions -->
-        <div class="p-6 pt-2 flex gap-3">
+        <div class="p-5 sm:p-6 pt-2 flex gap-3">
           <button 
             @click="emit('close')"
             class="flex-1 h-12 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition-all active:scale-95"
           >
-            取消
+            {{ t('promotion_modal.btn_cancel') }}
           </button>
           <button 
             @click="handleSubmit"
@@ -183,7 +186,7 @@ const handleSubmit = () => {
             class="flex-[2] h-12 rounded-xl font-black text-white shadow-xl transition-all active:scale-95 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale disabled:scale-100"
             :class="isValid ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20' : 'bg-slate-300 shadow-none'"
           >
-            確認派發
+            {{ t('promotion_modal.btn_confirm') }}
           </button>
         </div>
       </div>

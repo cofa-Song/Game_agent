@@ -41,23 +41,36 @@ const breadcrumbs = computed(() => {
     currentPath += `/${part}`
     
     // Manual mapping for breadcrumbs with translation keys
-    let name = part
-    if (currentPath === '/agents') name = '列表管理'
-    if (currentPath === '/agents/direct-players') name = '直屬玩家'
-    if (currentPath === '/finance') name = '財務管理'
-    if (currentPath === '/finance/withdrawal') name = '佣金提領申請'
-    if (currentPath === '/finance/audits') name = '下線提領審核'
-    if (currentPath === '/performance') name = '業績報表'
-    if (currentPath === '/reports') name = '報表管理中心'
+    let nameKey = ''
+    if (currentPath === '/agents') {
+      // Push the parent category first
+      crumbs.push({ name: t('menu.list_mgmt'), path: '#' })
+      // Only push 'Agent List' if this is the final page (not a parent for sub-routes)
+      const isSubRoute = parts.length > 1
+      if (!isSubRoute) {
+        nameKey = 'menu.agent_list'
+      } else {
+        // Skip adding 'agents' as a crumb — the sub-route will be the final crumb
+        return
+      }
+    }
+    if (currentPath === '/agents/direct-players') nameKey = 'menu.direct_players'
+    if (currentPath === '/finance') nameKey = 'menu.fin_mgmt'
+    if (currentPath === '/finance/withdrawal') nameKey = 'menu.withdrawal_req'
+    if (currentPath === '/finance/audits') nameKey = 'menu.downline_audit'
+    if (currentPath === '/performance') nameKey = 'menu.performance_report'
+    if (currentPath === '/reports') nameKey = 'menu.report_center'
+    if (currentPath === '/finance/logs') nameKey = 'menu.wallet_logs'
+    if (currentPath === '/profile') nameKey = 'common.profile'
     
     if (currentPath === '/performance' || currentPath === '/reports') {
-        if (!crumbs.some(c => c.name === '數據中心')) {
-            crumbs.push({ name: '數據中心', path: '#' })
+        if (!crumbs.some(c => c.name === t('menu.data_center'))) {
+            crumbs.push({ name: t('menu.data_center'), path: '#' })
         }
     }
 
     crumbs.push({ 
-      name: name.charAt(0).toUpperCase() + name.slice(1), 
+      name: nameKey ? t(nameKey) : (part.charAt(0).toUpperCase() + part.slice(1)), 
       path: currentPath 
     })
   })
