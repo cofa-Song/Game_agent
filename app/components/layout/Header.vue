@@ -1,5 +1,57 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+// Breadcrumb Mapping
+const breadcrumbMap: Record<string, string> = {
+  '/': '業績概覽',
+  '/agents': '列表管理',
+  '/agents/direct-players': '直屬玩家',
+  '/finance': '財務管理',
+  '/finance/withdrawal': '佣金提領申請',
+  '/finance/audits': '下線提領審核',
+  '/performance': '業績報表',
+  '/reports': '報表管理中心',
+  '/finance/logs': '錢包日誌',
+  '/profile': '個人資料'
+}
+
+// Generate breadcrumbs based on current path
+const breadcrumbs = computed(() => {
+  const path = route.path
+  const crumbs = [{ name: '首頁', path: '/' }]
+  
+  if (path === '/') {
+    crumbs.push({ name: breadcrumbMap['/'], path: '/' })
+    return crumbs
+  }
+
+  const parts = path.split('/').filter(p => p !== '')
+  let currentPath = ''
+  
+  parts.forEach((part, index) => {
+    currentPath += `/${part}`
+    const mappedName = breadcrumbMap[currentPath]
+    
+    // Special handling for paths that are under categories but URLs don't reflect it
+    // e.g. /performance is under '數據中心' in SideMenu
+    if (currentPath === '/performance' || currentPath === '/reports') {
+        if (!crumbs.some(c => c.name === '數據中心')) {
+            crumbs.push({ name: '數據中心', path: '#' }) // Placeholder or category path
+        }
+    }
+
+    if (mappedName) {
+      crumbs.push({ name: mappedName, path: currentPath })
+    } else {
+      crumbs.push({ name: part.charAt(0).toUpperCase() + part.slice(1), path: currentPath })
+    }
+  })
+  
+  return crumbs
+})
 
 const isDropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -9,7 +61,6 @@ const toggleDropdown = () => {
 }
 
 const handleLogout = () => {
-    // Perform logout logic (e.g., clearing tokens)
     console.log('Logging out...')
     navigateTo('/login')
 }
@@ -27,6 +78,7 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
 })
+
 // --- Mock Global Balances ---
 const globalPromotionBalance = ref(15000)
 const globalCommissionBalance = ref(456800)
@@ -36,16 +88,26 @@ const formatNumber = (num: number) => new Intl.NumberFormat().format(num)
 
 <template>
   <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-10">
-    <!-- Left side -->
-    <div class="flex items-center gap-2">
-      <span class="text-sm font-medium text-slate-500">首頁 / 代理管理</span>
-    </div>
+    <!-- Left side: Breadcrumbs -->
+    <nav class="flex items-center gap-2 overflow-hidden">
+      <div v-for="(crumb, index) in breadcrumbs" :key="crumb.path" class="flex items-center">
+        <!-- Separator -->
+        <svg v-if="index > 0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mx-2 text-slate-300 shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+        
+        <NuxtLink 
+          :to="crumb.path" 
+          class="text-sm font-bold transition-colors shrink-0"
+          :class="index === breadcrumbs.length - 1 ? 'text-slate-900 pointer-events-none' : 'text-slate-400 hover:text-indigo-600'"
+        >
+          {{ crumb.name }}
+        </NuxtLink>
+      </div>
+    </nav>
 
     <!-- Right side (Balances & Profile Area) -->
     <div class="flex items-center gap-6">
-      <!-- Global Balances -->
+      <!-- Global Balances Area ... (existing code remains the same) -->
       <div class="hidden md:flex items-center gap-4">
-        <!-- Promotion Balance -->
         <NuxtLink to="/wallet" class="flex flex-col items-end group transition-all">
           <span class="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-tight group-hover:text-indigo-400">推廣預算</span>
           <div class="flex items-center gap-1.5 cursor-pointer">
@@ -55,11 +117,7 @@ const formatNumber = (num: number) => new Intl.NumberFormat().format(num)
             </span>
           </div>
         </NuxtLink>
-
-        <!-- Divider -->
         <div class="h-8 w-px bg-slate-100 mx-2"></div>
-
-        <!-- Commission Balance -->
         <NuxtLink to="/wallet" class="flex flex-col items-end group transition-all">
           <span class="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-tight group-hover:text-indigo-400">佣金餘額</span>
           <div class="flex items-center gap-1.5 cursor-pointer">
@@ -83,34 +141,21 @@ const formatNumber = (num: number) => new Intl.NumberFormat().format(num)
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 transition-transform" :class="{ 'rotate-180': isDropdownOpen }"><path d="m6 9 6 6 6-6"/></svg>
         </button>
 
-        <!-- Dropdown Menu -->
-        <div 
-          v-if="isDropdownOpen"
-          class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 transition-all"
-        >
+        <div v-if="isDropdownOpen" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 transition-all">
           <div class="px-4 py-2 border-b border-slate-100">
             <p class="text-xs text-slate-400">登入為</p>
             <p class="text-sm font-medium text-slate-700">admin@example.com</p>
           </div>
-          <NuxtLink 
-            to="/profile"
-            class="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-          >
+          <NuxtLink to="/profile" class="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             個人資料
           </NuxtLink>
-          <NuxtLink 
-            to="/finance/logs"
-            class="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-          >
+          <NuxtLink to="/finance/logs" class="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
             錢包日誌
           </NuxtLink>
           <div class="h-px bg-slate-100 my-1"></div>
-          <button 
-            @click="handleLogout"
-            class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
-          >
+          <button @click="handleLogout" class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
             登出
           </button>
@@ -119,7 +164,3 @@ const formatNumber = (num: number) => new Intl.NumberFormat().format(num)
     </div>
   </header>
 </template>
-
-<style scoped>
-/* Any header styles */
-</style>
