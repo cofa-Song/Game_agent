@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 import DateRangePicker from '~/components/common/DateRangePicker.vue'
 
 // --- Types ---
@@ -125,6 +126,8 @@ const showDetails = (log: TxLog) => {
   selectedLog.value = log
   isModalOpen.value = true
 }
+
+useBodyScrollLock(() => isModalOpen.value)
 
 // --- Helpers ---
 const formatCurrency = (val: number) => {
@@ -289,7 +292,7 @@ const getTypeLabel = (type: TxType) => {
       <Transition name="fade">
         <div v-if="isModalOpen && selectedLog" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="isModalOpen = false"></div>
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden transform transition-all border border-slate-200">
+          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] relative z-10 overflow-hidden transform transition-all border border-slate-200 flex flex-col">
             <!-- Header -->
             <div class="px-6 py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 class="text-lg font-black text-slate-800">異動詳情</h3>
@@ -299,7 +302,7 @@ const getTypeLabel = (type: TxType) => {
             </div>
 
             <!-- Body -->
-            <div class="p-6 space-y-6">
+            <div class="p-6 space-y-6 overflow-y-auto">
               <!-- Summary -->
               <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <div class="flex flex-col">
@@ -340,12 +343,6 @@ const getTypeLabel = (type: TxType) => {
                 <div class="flex justify-between items-center px-4 py-3 bg-white border border-slate-100 rounded-xl">
                   <span class="text-xs font-bold text-slate-500">變更後</span>
                   <span class="font-mono font-black text-indigo-600">${{ formatCurrency(selectedLog.after) }}</span>
-                </div>
-
-                <!-- Decorator Icon -->
-                <div class="absolute right-[-8px] top-1/2 -translate-y-1/2 p-2 bg-indigo-500 rounded-full text-white shadow-md border-4 border-white">
-                  <svg v-if="selectedLog.change > 0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
                 </div>
               </div>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 
 interface ProfileData {
   name: string;
@@ -26,6 +27,8 @@ watch(() => props.show, (isShown) => {
   }
 })
 
+useBodyScrollLock(() => props.show)
+
 function handleClose() {
   emit('close')
 }
@@ -46,7 +49,7 @@ function handleSubmit() {
       ></div>
 
       <!-- Modal Content -->
-      <div class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-200 flex flex-col">
+      <div class="relative w-full max-w-lg max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-200 flex flex-col">
         <!-- Header -->
         <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div>
@@ -62,7 +65,7 @@ function handleSubmit() {
         </div>
 
         <!-- Form Body -->
-        <div class="p-8 space-y-6">
+        <div class="p-8 space-y-6 overflow-y-auto">
           <form @submit.prevent="handleSubmit" class="space-y-5">
             <!-- Name -->
             <div class="space-y-2">

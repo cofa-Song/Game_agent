@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 
 interface AgentData {
   id?: string;
@@ -87,6 +88,8 @@ function resetForm() {
 function handleClose() {
   emit('close')
 }
+
+useBodyScrollLock(() => props.show)
 
 function handleSubmit() {
   emit('save', { ...form.value })

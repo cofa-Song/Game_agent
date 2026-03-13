@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, defineComponent, h, onMounted } from 'vue'
+import { ref, defineComponent, h, onMounted, computed } from 'vue'
+import { useI18n } from '~/composables/useI18n'
 
 // --- Dynamic Import for ApexCharts (Client-only compatibility) ---
 // Since ssr: false is set in nuxt.config.ts, we can use it directly, 
@@ -14,41 +15,43 @@ onMounted(async () => {
   isChartLoaded.value = true
 })
 
+const { t, locale } = useI18n()
+
 // --- Dashboard Metrics ---
-const stats = [
+const stats = computed(() => [
   { 
-    label: '近期新增玩家', 
+    label: t('home.new_players'), 
     value: '342', 
     trend: 12.5, 
     colorClass: 'text-indigo-600 bg-indigo-50', 
     icon: 'UserPlusIcon',
-    description: '過去 7 天內新增玩家總數'
+    description: t('home.new_players')
   },
   { 
-    label: '近期儲值總額', 
+    label: t('home.deposit_amount'), 
     value: '$128,450', 
     trend: 8.2, 
     colorClass: 'text-emerald-600 bg-emerald-50', 
     icon: 'CurrencyDollarIcon',
-    description: '過去 7 天內玩家儲值總台幣'
+    description: t('home.deposit_amount')
   },
   { 
-    label: '近期 CPA 佣金', 
+    label: t('home.cpa_commission'), 
     value: '$45,200', 
     trend: 15.4, 
     colorClass: 'text-amber-600 bg-amber-50', 
     icon: 'GiftIcon',
-    description: '過去 7 天內結算的 CPA 獎勵'
+    description: t('home.cpa_commission')
   },
   { 
-    label: '近期儲值抽成', 
+    label: t('home.rev_share'), 
     value: '$32,150', 
     trend: 5.1, 
     colorClass: 'text-cyan-600 bg-cyan-50', 
     icon: 'ChartBarIcon',
-    description: '過去 7 天內代理儲值佣金收入'
+    description: t('home.rev_share')
   },
-]
+])
 
 // --- Mock Data for 7 Days ---
 const last7Days = ['3/07', '3/08', '3/09', '3/10', '3/11', '3/12', '3/13']
@@ -127,12 +130,12 @@ const comboChartOptions = ref({
 
 const comboSeries = ref([
   {
-    name: 'CPA 佣金',
+    name: t('home.cpa_commission'),
     type: 'column',
     data: cpaData
   },
   {
-    name: '儲值抽成',
+    name: t('home.deposit_commission'),
     type: 'line',
     data: revenueData
   }
@@ -152,7 +155,7 @@ const pieChartOptions = ref({
     }
   },
   colors: ['#22d3ee', '#312e81'], // Lighter Cyan (400), Deep Indigo (900) - Maximum contrast
-  labels: ['直屬玩家', '下線代理'],
+  labels: [t('home.direct_players'), t('home.downline_agents')],
   legend: {
     show: false
   },
@@ -199,7 +202,7 @@ const assessmentChartOptions = ref({
     }
   },
   colors: ['#6366f1', '#10b981', '#f43f5e'], // Indigo (考核中), Emerald (已達標), Rose (已失效)
-  labels: ['考核中', '已達標', '已失效'],
+  labels: [t('home.assessing'), t('home.qualified'), t('home.invalid')],
   legend: {
     show: false
   },
@@ -244,31 +247,31 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
     <!-- Page Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-black tracking-tight text-slate-900">業績概覽</h1>
+        <h1 class="text-2xl font-black tracking-tight text-slate-900">{{ t('home.performance_overview') }}</h1>
         <p class="text-sm font-medium text-slate-500 mt-1 flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-          昨日數據已更新 · 掌握代理與玩家表現分佈
+          {{ t('home.data_updated_description') }}
         </p>
       </div>
       <div class="flex gap-3">
-        <button class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all text-sm shadow-xl shadow-indigo-600/20 active:scale-95 flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M22 21v-4h-4"/><path d="M22 17l-3 3"/></svg>
-          刷新數據
+        <button class="whitespace-nowrap px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all text-xs sm:text-sm shadow-xl shadow-indigo-600/20 active:scale-95 flex items-center gap-1.5 sm:gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="sm:w-4 sm:h-4"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><path d="M22 21v-4h-4"/><path d="M22 17l-3 3"/></svg>
+          {{ t('home.refresh_data') }}
         </button>
       </div>
     </div>
 
-    <!-- Quick Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div 
-        v-for="stat in stats" 
-        :key="stat.label" 
-        class="group bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+      <div
+        v-for="stat in stats"
+        :key="stat.label"
+        class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 group cursor-default"
       >
         <div class="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-5 group-hover:scale-125 transition-transform">
           <component :is="stat.icon" class="w-20 h-20" />
         </div>
-        
+
         <div class="flex items-center justify-between mb-5 relative z-10">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner" :class="stat.colorClass">
             <component :is="stat.icon" class="w-6 h-6" />
@@ -277,15 +280,14 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
             <span :class="stat.trend > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'" class="text-[11px] font-black px-2 py-1 rounded-lg">
               {{ stat.trend > 0 ? '↑' : '↓' }} {{ Math.abs(stat.trend) }}%
             </span>
-            <span class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-wider">VS 上一期</span>
+            <span class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-wider">{{ t('home.vs_last_period') }}</span>
           </div>
         </div>
-        
+
         <div class="relative z-10">
           <p class="text-sm font-bold text-slate-400 uppercase tracking-widest">{{ stat.label }}</p>
           <div class="flex items-baseline gap-2 mt-2">
-            <p class="text-3xl font-black text-slate-900 tracking-tight">{{ stat.value }}</p>
-            <span v-if="stat.label.includes('總額') || stat.label.includes('佣金')" class="text-sm font-bold text-slate-400">TWD</span>
+            <p class="text-xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ stat.value }}</p>
           </div>
           <p class="text-[11px] text-slate-400 mt-3 font-medium">{{ stat.description }}</p>
         </div>
@@ -293,16 +295,16 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
     </div>
 
     <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- Performance Trend (Combo Chart) -->
-      <div class="lg:col-span-6 bg-white rounded-3xl shadow-sm border border-slate-100 py-8 px-2 md:px-4">
-        <div class="flex items-center justify-between mb-8 px-4">
+    <div class="grid grid-cols-2 lg:grid-cols-12 gap-4 md:gap-8">
+      <!-- Performance Trend Chart -->
+      <div class="col-span-2 lg:col-span-12 xl:col-span-6 bg-white rounded-3xl shadow-sm border border-slate-100 p-4 md:p-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <div>
-            <h3 class="text-xl font-black text-slate-800 tracking-tight">業績成長趨勢</h3>
-            <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">CPA & Revenue Analysis</p>
+            <h3 class="text-xl font-black text-slate-800 tracking-tight">{{ t('home.trend_title') }}</h3>
+            <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{{ t('home.trend_subtitle') }}</p>
           </div>
         </div>
-        
+
         <div class="h-80 w-full">
            <div v-if="isChartLoaded" class="w-[98%] h-full mx-auto">
              <component 
@@ -316,16 +318,16 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
            </div>
            <div v-else class="flex flex-col items-center gap-4 text-slate-300 h-full justify-center">
              <div class="w-12 h-12 border-4 border-slate-100 border-t-indigo-500 rounded-full animate-spin"></div>
-             <span class="text-sm font-bold animate-pulse">圖表加載中...</span>
+             <span class="text-sm font-bold animate-pulse">{{ t('common.chart_loading') }}</span>
            </div>
         </div>
       </div>
 
       <!-- Commission Source (Pie Chart) -->
-      <div class="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center">
+      <div class="col-span-1 sm:col-span-1 lg:col-span-6 xl:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col items-center">
         <div class="mb-4 text-center w-full">
-            <h3 class="text-lg font-black text-slate-800 tracking-tight">佣金來源</h3>
-            <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Commission Sources</p>
+            <h3 class="text-lg font-black text-slate-800 tracking-tight">{{ t('home.source_title') }}</h3>
+            <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{{ t('home.source_subtitle') }}</p>
         </div>
         
         <div class="h-48 w-full flex items-center justify-center relative">
@@ -339,7 +341,7 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
              :series="pieSeries" 
            />
            <div v-else class="animate-pulse flex items-center justify-center h-full w-full bg-slate-50 rounded-full border-8 border-slate-100">
-              <span class="text-xs font-black text-slate-300 uppercase tracking-widest">Loading...</span>
+              <span class="text-xs font-black text-slate-300 uppercase tracking-widest">{{ t('common.loading') }}</span>
            </div>
         </div>
 
@@ -347,14 +349,14 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
            <div class="flex items-center justify-between p-3 rounded-2xl bg-cyan-50/50 border border-cyan-100">
               <div class="flex items-center gap-2">
                  <div class="w-2 h-2 rounded-full bg-cyan-500"></div>
-                 <span class="text-[11px] font-extrabold text-cyan-800">直屬玩家</span>
+                 <span class="text-[11px] font-extrabold text-cyan-800">{{ t('home.direct_players') }}</span>
               </div>
               <span class="text-xs font-black text-cyan-900">65%</span>
            </div>
            <div class="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100">
               <div class="flex items-center gap-2">
                  <div class="w-2 h-2 rounded-full bg-indigo-600"></div>
-                 <span class="text-[11px] font-extrabold text-indigo-800">下線代理</span>
+                 <span class="text-[11px] font-extrabold text-indigo-800">{{ t('home.downline_agents') }}</span>
               </div>
               <span class="text-xs font-black text-indigo-900">35%</span>
            </div>
@@ -362,10 +364,10 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
       </div>
 
       <!-- Assessment Status (Pie Chart) [NEW] -->
-      <div class="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex flex-col items-center">
+      <div class="col-span-1 sm:col-span-1 lg:col-span-6 xl:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-100 p-4 sm:p-6 flex flex-col items-center">
         <div class="mb-4 text-center w-full">
-            <h3 class="text-lg font-black text-slate-800 tracking-tight">直屬考核狀態</h3>
-            <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Assessment Analysis</p>
+            <h3 class="text-lg font-black text-slate-800 tracking-tight">{{ t('home.assessment_title') }}</h3>
+            <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{{ t('home.assessment_subtitle') }}</p>
         </div>
         
         <div class="h-48 w-full flex items-center justify-center relative">
@@ -379,7 +381,7 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
              :series="assessmentSeries" 
            />
            <div v-else class="animate-pulse flex items-center justify-center h-full w-full bg-slate-50 rounded-full border-8 border-slate-100">
-              <span class="text-xs font-black text-slate-300 uppercase tracking-widest">Loading...</span>
+              <span class="text-xs font-black text-slate-300 uppercase tracking-widest">{{ t('common.loading') }}</span>
            </div>
         </div>
 
@@ -387,21 +389,21 @@ const ChartBarIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", width
            <div class="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100">
               <div class="flex items-center gap-2">
                  <div class="w-2 h-2 rounded-full bg-indigo-600"></div>
-                 <span class="text-[11px] font-extrabold text-indigo-800">考核中</span>
+                  <span class="text-[11px] font-extrabold text-indigo-800">{{ t('home.assessing') }}</span>
               </div>
               <span class="text-xs font-black text-indigo-900">45%</span>
-           </div>
-           <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100">
               <div class="flex items-center gap-2">
                  <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                 <span class="text-[11px] font-extrabold text-emerald-800">已達標</span>
+                 <span class="text-[11px] font-extrabold text-emerald-800">{{ t('home.qualified') }}</span>
               </div>
               <span class="text-xs font-black text-emerald-900">40%</span>
-           </div>
-           <div class="flex items-center justify-between p-3 rounded-2xl bg-rose-50/50 border border-rose-100">
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-2xl bg-rose-50/50 border border-rose-100">
               <div class="flex items-center gap-2">
                  <div class="w-2 h-2 rounded-full bg-rose-500"></div>
-                 <span class="text-[11px] font-extrabold text-rose-800">已失效</span>
+                 <span class="text-[11px] font-extrabold text-rose-800">{{ t('home.invalid') }}</span>
               </div>
               <span class="text-xs font-black text-rose-900">15%</span>
            </div>

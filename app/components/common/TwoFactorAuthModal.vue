@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 
 const props = defineProps<{
   show: boolean;
@@ -16,6 +17,8 @@ watch(() => props.show, (isShown) => {
     otp.value = ['', '', '', '', '', '']
   }
 })
+
+useBodyScrollLock(() => props.show)
 
 function handleInput(index: number, e: Event) {
   const target = e.target as HTMLInputElement
@@ -59,7 +62,7 @@ function handleSubmit() {
       ></div>
 
       <!-- Modal Content -->
-      <div class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-200 flex flex-col">
+      <div class="relative w-full max-w-md max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-200 flex flex-col">
         <!-- Header -->
         <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div>

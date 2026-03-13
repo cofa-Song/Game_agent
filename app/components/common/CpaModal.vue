@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 
 interface CpaData {
   uid: string;
@@ -57,6 +58,8 @@ const isCpaValid = computed(() => {
 const handleClose = () => {
   emit('close')
 }
+
+useBodyScrollLock(() => props.show)
 
 const handleSubmit = () => {
   if (!isCpaValid.value) return

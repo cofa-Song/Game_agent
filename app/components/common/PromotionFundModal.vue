@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 
 const props = defineProps<{
   show: boolean
@@ -50,6 +51,8 @@ watch(() => props.show, (newVal) => {
   if (newVal) resetForm()
 })
 
+useBodyScrollLock(() => props.show)
+
 const handleSubmit = () => {
   if (!isValid.value) return
   emit('submit', {
@@ -70,7 +73,7 @@ const handleSubmit = () => {
       <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="emit('close')"></div>
 
       <!-- Modal Content -->
-      <div class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-100">
+      <div class="relative w-full max-w-md max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-100 flex flex-col">
         <!-- Header -->
         <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <div>
