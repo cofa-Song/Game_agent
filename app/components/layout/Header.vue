@@ -207,7 +207,7 @@ const formatNumber = (num: number) => new Intl.NumberFormat().format(num)
           <button 
             v-for="lang in languages" 
             :key="lang.code"
-            @click="switchLanguage(lang.code)"
+            @click="switchLanguage(lang.code); isLangMenuOpen = false"
             class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm font-bold"
             :class="currentLocale === lang.code ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-600'"
           >
@@ -242,19 +242,19 @@ const formatNumber = (num: number) => new Intl.NumberFormat().format(num)
             <p class="text-sm font-black text-slate-900 mt-0.5">Admin User (admin_01)</p>
           </div>
           
-          <NuxtLink to="/profile" class="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-slate-50 transition-all font-bold text-sm">
+          <NuxtLink to="/profile" @click="isDropdownOpen = false" class="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-slate-50 transition-all font-bold text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             個人資料
           </NuxtLink>
 
-          <NuxtLink to="/finance/logs" class="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-slate-50 transition-all font-bold text-sm">
+          <NuxtLink to="/finance/logs" @click="isDropdownOpen = false" class="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-slate-50 transition-all font-bold text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
             錢包日誌
           </NuxtLink>
 
           <div class="h-px bg-slate-100 my-1 mx-4"></div>
 
-          <button @click="handleLogout" class="w-full flex items-center gap-3 px-4 py-2.5 text-rose-600 hover:bg-rose-50 transition-all font-bold text-sm">
+          <button @click="handleLogout(); isDropdownOpen = false" class="w-full flex items-center gap-3 px-4 py-2.5 text-rose-600 hover:bg-rose-50 transition-all font-bold text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
             退出登入
           </button>

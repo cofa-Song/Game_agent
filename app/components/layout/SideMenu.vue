@@ -28,6 +28,12 @@ interface MenuSection {
   items: MenuItem[]
 }
 
+// Control expanded state
+const expandedSections = ref<string[]>(['menu.list_mgmt', 'menu.fin_mgmt', 'menu.data_center'])
+const qrCodeDataUrl = ref('')
+const copied = ref(false)
+const isQrExpanded = ref(false)
+
 // Define the menu structure
 const menuSections: MenuSection[] = [
   {
@@ -54,8 +60,7 @@ const menuSections: MenuSection[] = [
         isExpandable: true,
         children: [
           { nameKey: 'menu.withdrawal_req', icon: 'wallet', path: '/finance/withdrawal' },
-          { nameKey: 'menu.downline_audit', icon: 'check-square', path: '/finance/audits' },
-          { nameKey: 'menu.wallet_logs', icon: 'clipboard-list', path: '/finance/logs' }
+          { nameKey: 'menu.downline_audit', icon: 'check-square', path: '/finance/audits' }
         ]
       },
       { 
@@ -71,9 +76,6 @@ const menuSections: MenuSection[] = [
   }
 ]
 
-// Control expanded state
-const expandedSections = ref<string[]>(['menu.list_mgmt', 'menu.fin_mgmt', 'menu.data_center'])
-
 const toggleSection = (nameKey: string) => {
   if (expandedSections.value.includes(nameKey)) {
     expandedSections.value = expandedSections.value.filter(m => m !== nameKey)
@@ -87,8 +89,6 @@ const isSectionExpanded = (nameKey: string) => expandedSections.value.includes(n
 // --- Promo Code ---
 const promoCode = ref('VIP888')
 const promoLink = ref('')
-const qrCodeDataUrl = ref('')
-const copied = ref(false)
 
 onMounted(async () => {
   promoLink.value = `https://example.com/register?ref=${promoCode.value}`
@@ -135,7 +135,7 @@ function downloadQRCode() {
     :class="isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
   >
     <!-- Logo Section -->
-    <div class="p-8">
+    <div class="p-8 pb-0">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
@@ -148,7 +148,7 @@ function downloadQRCode() {
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 px-4 py-4 space-y-8 overflow-y-auto custom-scrollbar">
+    <nav class="flex-1 px-4 py-4 space-y-3 overflow-y-auto custom-scrollbar">
       <div v-for="section in menuSections" :key="section.titleKey" class="mb-2">
         <div class="space-y-1 px-3">
           <div v-for="item in section.items" :key="item.nameKey">
@@ -165,7 +165,7 @@ function downloadQRCode() {
                     <svg v-else-if="item.icon === 'wallet'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a19 19 0 0 1-5 7.96V16a2 2 0 0 0-2-2"/></svg>
                     <svg v-else-if="item.icon === 'chart-pie'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
                   </div>
-                  <span class="text-xs font-bold tracking-wide">{{ t(item.nameKey) }}</span>
+                  <span class="text-sm font-bold tracking-wide">{{ t(item.nameKey) }}</span>
                 </div>
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -189,7 +189,7 @@ function downloadQRCode() {
                   v-for="child in item.children" 
                   :key="child.path"
                   :to="child.path || '/'"
-                  class="flex items-center gap-3 pl-14 pr-3 py-2 rounded-xl text-[11px] font-bold transition-all duration-200"
+                  class="flex items-center gap-3 pl-14 pr-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
                   :class="route.path === child.path ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/20'"
                 >
                   {{ t(child.nameKey) }}
@@ -212,7 +212,7 @@ function downloadQRCode() {
                 >
                   <svg v-if="item.icon === 'dashboard'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
                 </div>
-                <span class="text-xs font-bold tracking-wide">{{ t(item.nameKey) }}</span>
+                <span class="text-sm font-bold tracking-wide">{{ t(item.nameKey) }}</span>
               </div>
             </NuxtLink>
           </div>
@@ -221,9 +221,35 @@ function downloadQRCode() {
     </nav>
 
     <!-- QR Code Section -->
-    <div class="p-6 mt-auto border-t border-slate-800/50">
-      <div class="bg-slate-800/50 p-4 rounded-2xl space-y-4">
-        <div class="text-[10px] text-slate-500 uppercase font-black tracking-widest text-center">{{ t('common.promo_link') }}</div>
+    <div class="px-6 pb-6 pt-2 mt-auto border-t border-slate-800/50 bg-slate-900 sticky bottom-0 z-20">
+      <!-- Toggle Button for Mobile -->
+      <button 
+        @click="isQrExpanded = !isQrExpanded"
+        class="md:hidden w-full flex items-center justify-between py-3 text-slate-400 font-bold text-xs uppercase tracking-widest"
+      >
+        <span class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="4" height="4" x="3" y="3" rx="1"/><rect width="4" height="4" x="17" y="3" rx="1"/><rect width="4" height="4" x="17" y="17" rx="1"/><rect width="4" height="4" x="3" y="17" rx="1"/><rect width="4" height="4" x="10" y="10" rx="1"/><rect width="4" height="4" x="10" y="3" rx="1"/><rect width="4" height="4" x="10" y="17" rx="1"/><rect width="4" height="4" x="17" y="10" rx="1"/><rect width="4" height="4" x="3" y="10" rx="1"/></svg>
+          {{ t('common.promo_link') }}
+        </span>
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="16" height="16" 
+          viewBox="0 0 24 24" fill="none" 
+          stroke="currentColor" stroke-width="2" 
+          stroke-linecap="round" stroke-linejoin="round"
+          class="transition-transform duration-300"
+          :class="isQrExpanded ? 'rotate-180' : ''"
+        >
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      <!-- Expandable Content -->
+      <div 
+        class="bg-slate-800/50 p-4 rounded-2xl space-y-4 md:block overflow-hidden transition-all duration-300"
+        :class="isQrExpanded ? 'max-h-[300px] opacity-100 mt-2' : 'max-h-0 opacity-0 md:max-h-[300px] md:opacity-100 md:mt-4 p-0 md:p-4 border-0 pb-0 md:pb-4 mb-2 md:mb-0'"
+      >
+        <div class="hidden md:block text-[10px] text-slate-500 uppercase font-black tracking-widest text-center">{{ t('common.promo_link') }}</div>
         <div class="flex justify-center">
           <div 
             class="p-2 bg-white rounded-xl shadow-sm cursor-pointer hover:shadow-xl transition-all"

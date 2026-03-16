@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   initialPlayerKeyword?: string
@@ -13,10 +16,10 @@ const emit = defineEmits(['search', 'reset'])
 // --- Search Types ---
 const playerSearchType = ref('account')
 const agentSearchType = ref('account')
-const searchTypeOptions = [
-  { label: '帳號', value: 'account' },
-  { label: 'UID', value: 'uid' }
-]
+const searchTypeOptions = computed(() => [
+  { label: t('performance.type_account'), value: 'account' },
+  { label: t('performance.type_uid'), value: 'uid' }
+])
 
 // --- Helpers ---
 const formatDate = (date: Date) => {
@@ -42,13 +45,13 @@ const endDate = ref(props.initialEndDate || yesterdayStr)
 
 // --- Computed ---
 const playerPlaceholder = computed(() => {
-  const active = searchTypeOptions.find(opt => opt.value === playerSearchType.value)
-  return active ? `搜尋直屬玩家${active.label}...` : '搜尋玩家...'
+  const active = searchTypeOptions.value.find(opt => opt.value === playerSearchType.value)
+  return active ? t('performance.filter_placeholder_search', { type: active.label }) : ''
 })
 
 const agentPlaceholder = computed(() => {
-  const active = searchTypeOptions.find(opt => opt.value === agentSearchType.value)
-  return active ? `搜尋代理${active.label}...` : '搜尋代理...'
+  const active = searchTypeOptions.value.find(opt => opt.value === agentSearchType.value)
+  return active ? t('performance.filter_placeholder_search', { type: active.label }) : ''
 })
 
 // --- Actions ---
@@ -115,7 +118,7 @@ const setDateRange = (type: 'today' | 'yesterday' | 'week' | 'month') => {
             <div class="flex items-center justify-between">
               <label class="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                直屬玩家
+                {{ t('performance.filter_player') }}
               </label>
               <div class="flex p-0.5 bg-slate-100 rounded-lg">
                 <button 
@@ -152,7 +155,7 @@ const setDateRange = (type: 'today' | 'yesterday' | 'week' | 'month') => {
             <div class="flex items-center justify-between">
               <label class="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                代理帳號
+                {{ t('performance.filter_agent') }}
               </label>
               <div class="flex p-0.5 bg-slate-100 rounded-lg">
                 <button 
@@ -189,15 +192,15 @@ const setDateRange = (type: 'today' | 'yesterday' | 'week' | 'month') => {
             <div class="flex items-center justify-between">
               <label class="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                結算日期
+                {{ t('performance.filter_date') }}
               </label>
-              <div class="flex gap-1.5">
+              <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
                 <button 
-                  v-for="btn in [{l:'今天', v:'today'}, {l:'昨天', v:'yesterday'}, {l:'本週', v:'week'}, {l:'本月', v:'month'}]" 
+                  v-for="btn in [{l:t('player_search.today'), v:'today'}, {l:t('player_search.yesterday'), v:'yesterday'}, {l:t('player_search.this_week'), v:'week'}, {l:t('player_search.this_month'), v:'month'}]" 
                   :key="btn.v"
                   type="button"
                   @click="setDateRange(btn.v as any)"
-                  class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white transition-all transform active:scale-95"
+                  class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white transition-all transform active:scale-95 whitespace-nowrap"
                 >
                   {{ btn.l }}
                 </button>
@@ -213,35 +216,35 @@ const setDateRange = (type: 'today' | 'yesterday' | 'week' | 'month') => {
         </div>
 
         <!-- Footer Actions -->
-        <div class="flex items-center justify-between pt-2">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
           <div class="flex items-center gap-3">
             <button 
               type="submit" 
-              class="h-11 px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xl shadow-indigo-600/20 transition-all text-sm font-black flex items-center gap-2 transform hover:-translate-y-0.5 active:scale-95 group"
+              class="flex-1 sm:flex-none h-11 px-8 sm:px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xl shadow-indigo-600/20 transition-all text-sm font-black flex items-center justify-center gap-2 transform hover:-translate-y-0.5 active:scale-95 group"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              <span>搜尋</span>
+              <span>{{ t('performance.filter_search') }}</span>
             </button>
             <button 
               type="button" 
               @click="handleReset" 
               class="h-11 px-6 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all text-sm font-bold border border-transparent active:scale-95"
             >
-              清除條件
+              {{ t('performance.filter_reset') }}
             </button>
           </div>
 
           <!-- Generate Report Button (Cyan theme) -->
           <button 
             type="button"
-            class="group relative inline-flex items-center gap-2 px-8 py-2.5 bg-cyan-500 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/30 hover:bg-cyan-600 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+            class="group relative inline-flex items-center justify-center gap-2 px-8 py-2.5 bg-cyan-500 text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/30 hover:bg-cyan-600 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
           >
             <div class="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-[-30deg] -translate-x-full group-hover:animate-[shine_0.75s_ease-out]"></div>
             <div class="relative flex items-center gap-2">
               <div class="p-1 bg-white/20 rounded-lg group-hover:scale-110 transition-transform duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M10 9H8"/></svg>
               </div>
-              <span class="tracking-tight text-base">生成報表</span>
+              <span class="tracking-tight text-base">{{ t('performance.filter_generate') }}</span>
             </div>
           </button>
         </div>
