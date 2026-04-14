@@ -26,6 +26,7 @@ interface PlayerData {
   cumulativeCommission: number
   assessmentStatus: 'ongoing' | 'achieved' | 'expired'
   assessmentPeriodDays: number
+  type: 'direct' | 'downline'
 }
 
 // --- Mock Data ---
@@ -44,7 +45,8 @@ const players = ref<PlayerData[]>([
     accountStatus: 'normal',
     cumulativeCommission: 450,
     assessmentStatus: 'ongoing',
-    assessmentPeriodDays: 30
+    assessmentPeriodDays: 30,
+    type: 'direct'
   },
   {
     id: '2',
@@ -60,7 +62,8 @@ const players = ref<PlayerData[]>([
     accountStatus: 'normal',
     cumulativeCommission: 1500,
     assessmentStatus: 'achieved',
-    assessmentPeriodDays: 30
+    assessmentPeriodDays: 30,
+    type: 'downline'
   },
   {
     id: '3',
@@ -76,7 +79,8 @@ const players = ref<PlayerData[]>([
     accountStatus: 'locked',
     cumulativeCommission: 60,
     assessmentStatus: 'ongoing',
-    assessmentPeriodDays: 30
+    assessmentPeriodDays: 30,
+    type: 'direct'
   },
   {
     id: '4',
@@ -92,7 +96,8 @@ const players = ref<PlayerData[]>([
     accountStatus: 'suspended',
     cumulativeCommission: 30,
     assessmentStatus: 'expired',
-    assessmentPeriodDays: 30
+    assessmentPeriodDays: 30,
+    type: 'downline'
   }
 ])
 
@@ -126,7 +131,23 @@ const calculateCountdown = (registeredAt: string, periodDays: number) => {
 // --- Privacy / Desensitization Logic ---
 const isMasked = ref(true)
 
-const maskString = (str: string, type: 'name' | 'phone') => {
+const maskString = (str: string, type: 'name' | 'phone' | 'birthday', playerType: 'direct' | 'downline' = 'direct') => {
+  // Downline players are always masked
+  if (playerType === 'downline') {
+    if (!str) return ''
+    if (type === 'name') {
+      if (str.length <= 2) return str[0] + '*'
+      return str[0] + '*'.repeat(str.length - 2) + str[str.length - 1]
+    } else if (type === 'phone') {
+      if (str.length < 7) return str
+      return str.slice(0, 4) + '***' + str.slice(-3)
+    } else if (type === 'birthday') {
+      // Mask birthday for downline: YYYY-MM-DD -> ****-**-**
+      return '****-**-**'
+    }
+  }
+
+  // Direct players follow the isMasked toggle
   if (!isMasked.value) return str
   if (!str) return ''
   
@@ -185,6 +206,22 @@ const getAssessmentStatusClass = (status: string) => {
   }
 }
 
+const getPlayerTypeLabel = (type: string) => {
+  const map: Record<string, string> = {
+    direct: 'players.type_direct',
+    downline: 'players.type_downline'
+  }
+  return t(map[type] || 'players.status_unknown') as string
+}
+
+const getPlayerTypeClass = (type: string) => {
+  switch(type) {
+    case 'direct': return 'bg-indigo-100 text-indigo-700 border-indigo-200'
+    case 'downline': return 'bg-orange-100 text-orange-700 border-orange-200'
+    default: return 'bg-slate-100 text-slate-700 border-slate-200'
+  }
+}
+
 // --- Promotion Fund Modal Logic ---
 const promotionBalance = ref(15000)
 const isPromotionModalShow = ref(false)
@@ -221,7 +258,7 @@ const handleReset = () => {
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{{ t('players.title') }}</h1>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1">{{ t('players.subtitle') }}</p>
+        <p v-if="t('players.subtitle')" class="text-xs sm:text-sm text-slate-500 mt-1">{{ t('players.subtitle') }}</p>
       </div>
     </div>
 
@@ -257,6 +294,7 @@ const handleReset = () => {
           <thead class="text-xs text-slate-500 bg-slate-50/50 uppercase border-b border-slate-200">
             <tr>
               <th scope="col" class="px-4 py-4 font-bold text-center">{{ t('players.col_uid_account') }}</th>
+              <th scope="col" class="px-4 py-4 font-bold text-center">{{ t('players.col_type') }}</th>
               <th scope="col" class="px-4 py-4 font-bold">{{ t('players.col_name') }}</th>
               <th scope="col" class="px-4 py-4 font-bold">{{ t('players.col_phone') }}</th>
               <th scope="col" class="px-4 py-4 font-bold text-center">{{ t('players.col_birthday') }}</th>
@@ -280,19 +318,28 @@ const handleReset = () => {
                 </div>
               </td>
 
+              <td class="px-4 py-4 text-center">
+                <span 
+                  class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold border whitespace-nowrap"
+                  :class="getPlayerTypeClass(player.type)"
+                >
+                  {{ getPlayerTypeLabel(player.type) }}
+                </span>
+              </td>
+
               <!-- Player Name -->
               <td class="px-4 py-4 font-medium text-slate-700">
-                {{ maskString(player.name, 'name') }}
+                {{ maskString(player.name, 'name', player.type) }}
               </td>
 
               <!-- Phone -->
               <td class="px-4 py-4 text-slate-600 font-medium">
-                {{ maskString(player.phone, 'phone') }}
+                {{ maskString(player.phone, 'phone', player.type) }}
               </td>
 
               <!-- Birthday -->
               <td class="px-4 py-4 text-center text-slate-500 font-medium">
-                {{ player.birthday }}
+                {{ player.type === 'downline' ? '****-**-**' : player.birthday }}
               </td>
 
               <!-- Registration Time -->
@@ -371,8 +418,10 @@ const handleReset = () => {
               <td class="px-4 py-4 text-center sticky right-0 bg-white group-hover:bg-slate-50/50 transition-colors shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)] border-l border-slate-100">
                 <button 
                   @click="handleOpenPromotion(player)"
-                  class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all transform hover:scale-110 active:scale-95 group/btn"
-                  :title="t('players.tooltip_promotion') as string"
+                  :disabled="player.type === 'downline'"
+                  class="p-2.5 rounded-xl transition-all transform hover:scale-110 active:scale-95 group/btn"
+                  :class="player.type === 'downline' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-50 grayscale' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'"
+                  :title="player.type === 'downline' ? '' : t('players.tooltip_promotion') as string"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover/btn:rotate-12"><path d="M20 12V8H4v4"/><path d="M2 12h20"/><path d="M7 12V8"/><path d="M17 12V8"/><path d="M12 12V8"/><path d="m20 12 1 4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2l1-4"/><path d="M12 18v4"/><path d="m9 20 3 2 3-2"/></svg>
                 </button>
@@ -390,6 +439,12 @@ const handleReset = () => {
               <div class="flex items-center gap-2 mb-1">
                 <span class="font-bold text-slate-900 text-sm">{{ player.uid }}</span>
                 <span 
+                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap"
+                  :class="getPlayerTypeClass(player.type)"
+                >
+                  {{ getPlayerTypeLabel(player.type) }}
+                </span>
+                <span 
                   class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border"
                   :class="getAssessmentStatusClass(player.assessmentStatus)"
                 >
@@ -398,20 +453,16 @@ const handleReset = () => {
                   ></span>
                   {{ getAssessmentStatusLabel(player.assessmentStatus) }}
                 </span>
-                <span 
-                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border"
-                  :class="getAccountStatusClass(player.accountStatus)"
-                >
-                  {{ getAccountStatusLabel(player.accountStatus) }}
-                </span>
               </div>
-              <div class="text-xs text-slate-500">{{ maskString(player.name, 'name') }} · {{ maskString(player.phone, 'phone') }}</div>
+              <div class="text-xs text-slate-500">{{ maskString(player.name, 'name', player.type) }} · {{ maskString(player.phone, 'phone', player.type) }}</div>
               <div class="text-[10px] text-slate-400 mt-0.5 font-mono">{{ player.account }}</div>
             </div>
             <button 
               @click="handleOpenPromotion(player)"
-              class="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all"
-              :title="t('players.tooltip_promotion') as string"
+              :disabled="player.type === 'downline'"
+              class="p-2 rounded-xl transition-all"
+              :class="player.type === 'downline' ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-50 grayscale' : 'bg-indigo-50 text-indigo-600'"
+              :title="player.type === 'downline' ? '' : t('players.tooltip_promotion') as string"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H4v4"/><path d="M2 12h20"/><path d="m20 12 1 4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2l1-4"/><path d="M12 18v4"/><path d="m9 20 3 2 3-2"/></svg>
             </button>
