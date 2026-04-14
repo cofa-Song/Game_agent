@@ -1,0 +1,1 @@
+import{E as c,J as d}from"./C54as5yC.js";function s(t){let o="";const l=()=>{o=document.body.style.overflow,document.body.style.overflow="hidden"},e=()=>{document.body.style.overflow=o};c(t,n=>{n?l():e()},{immediate:!0}),d(()=>{e()})}export{s as u};

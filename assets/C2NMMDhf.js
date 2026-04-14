@@ -1,0 +1,1 @@
+import{_ as s,o as t,c as n,K as c}from"./C54as5yC.js";const o={},a={class:"min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans"};function r(e,l){return t(),n("div",a,[c(e.$slots,"default",{},void 0)])}const _=s(o,[["render",r],["__scopeId","data-v-e3436a97"]]);export{_ as default};
