@@ -17,9 +17,6 @@ interface AgentData {
   contact: string;
   remark: string;
   status: 'normal' | 'frozen' | 'disabled';
-  cpaLevel1?: number;
-  cpaLevel2?: number;
-  cpaLevel3?: number;
   commissionRatio?: number;
   is2faEnabled: boolean;
 }
@@ -43,9 +40,6 @@ const form = ref<AgentData>({
   contact: '',
   remark: '',
   status: 'normal',
-  cpaLevel1: 0,
-  cpaLevel2: 0,
-  cpaLevel3: 0,
   commissionRatio: 0,
   is2faEnabled: false
 })
@@ -65,7 +59,10 @@ const accountTypeKeyMap: Record<string, string> = {
 
 watch(() => props.agent, (newAgent) => {
   if (newAgent && props.mode === 'edit') {
-    form.value = { ...newAgent }
+    form.value = { 
+      ...newAgent,
+      commissionRatio: newAgent.commissionRatio ?? (newAgent as any).commissionAllocationRate ?? 0
+    }
   } else {
     resetForm()
   }
@@ -87,9 +84,6 @@ function resetForm() {
     contact: '',
     remark: '',
     status: 'normal',
-    cpaLevel1: 0,
-    cpaLevel2: 0,
-    cpaLevel3: 0,
     commissionRatio: 0,
     is2faEnabled: false
   }
@@ -287,37 +281,30 @@ function handleSubmit() {
               </div>
             </div>
 
-          <!-- CPA & Commission Configuration Section -->
-          <div v-if="mode === 'add'" class="pt-6 border-t border-slate-100">
+          <!-- Commission Configuration Section -->
+          <div class="pt-6 border-t border-slate-100">
             <div class="flex items-center gap-2 mb-6 text-indigo-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <h4 class="font-bold">{{ t('agent_modal.cpa_config_title') }}</h4>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              <h4 class="font-bold">{{ mode === 'add' ? t('agent_modal.cpa_config_title') : t('agent_modal.commission_ratio') }}</h4>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-              <!-- CPA Levels -->
-              <div v-for="l in [1, 2, 3]" :key="l" class="space-y-2">
-                <label class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                  {{ t('agent_modal.cpa_level', { level: l }) }}
-                </label>
-                <div class="relative">
-                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
-                  <input 
-                    v-model.number="form['cpaLevel' + l as keyof AgentData]"
-                    type="number"
-                    :placeholder="t('agent_modal.placeholder_price') as string"
-                    class="w-full h-10 pl-6 pr-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm outline-none"
-                  >
-                </div>
+
+            <!-- CPA Mechanism Info (read-only, only show on add) -->
+            <div v-if="mode === 'add'" class="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-start gap-3">
+              <div class="p-1.5 bg-teal-100 rounded-lg text-teal-600 shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-teal-800">由下往上（Bottom-Up）CPA 分潤機制</p>
+                <p class="text-[11px] text-teal-600 mt-0.5">CPA 單價由平台總後台統一設定，系統自動按 A0=50%、A1=25%、A2=25% 比例分發，代理商無需手動配置。</p>
               </div>
             </div>
 
             <!-- Commission Ratio -->
-            <div class="mt-6 p-4 bg-slate-50 rounded-2xl space-y-4">
+            <div class="p-4 bg-slate-50 rounded-2xl space-y-4">
               <div class="flex items-center justify-between">
                 <label class="text-sm font-bold text-slate-700">{{ t('agent_modal.commission_ratio') }}</label>
                 <div class="relative w-20">
-                  <input 
+                  <input
                     v-model.number="form.commissionRatio"
                     type="number"
                     min="0"
@@ -327,7 +314,7 @@ function handleSubmit() {
                   <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">%</span>
                 </div>
               </div>
-              <input 
+              <input
                 v-model.number="form.commissionRatio"
                 type="range"
                 min="0"

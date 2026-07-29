@@ -78,35 +78,18 @@ const playerCriteria = computed(() => [
   { icon: 'clock', label: t('profile.criteria_time'), value: t('profile.criteria_time_val') },
 ])
 
-// --- CPA 獎勵級距 (computed for i18n reactivity) ---
-const cpaRewardTiers = computed(() => [
-  {
-    range: t('profile.cpa_range_1'),
-    price: 600,
-    status: 'active',
-    statusLabel: t('profile.cpa_active'),
-    progress: t('profile.cpa_progress_1'),
-    current: 45,
-    target: 50,
-  },
-  {
-    range: t('profile.cpa_range_2'),
-    price: 900,
-    status: 'inactive',
-    statusLabel: t('profile.cpa_inactive'),
-    progress: '--',
-    current: 0,
-    target: 100,
-  },
-  {
-    range: t('profile.cpa_range_3'),
-    price: 1200,
-    status: 'inactive',
-    statusLabel: t('profile.cpa_inactive'),
-    progress: '--',
-    current: 0,
-    target: null,
-  },
+// --- CPA 分潤配置 (Mock Data) ---
+const baseCpa = ref(1200)
+
+const myCpaRatio = computed(() => {
+  return 100
+})
+
+const distRules = computed(() => [
+  { key: 'profile.cpa_dist_a0', ratio: 100, amount: Math.floor(baseCpa.value * 1.0) },
+  { key: 'profile.cpa_dist_a1', ratio: 50, amount: Math.floor(baseCpa.value * 0.5) },
+  { key: 'profile.cpa_dist_a2', ratio: 25, amount: Math.floor(baseCpa.value * 0.25) },
+  { key: 'profile.cpa_dist_a3plus', ratio: 0, amount: 0 }
 ])
 
 // --- 儲值抽成權限 ---
@@ -288,95 +271,107 @@ const commissionRate = ref(60) // %
         <span class="ml-auto text-[9px] md:text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-full whitespace-nowrap">{{ t('profile.cpa_note') }}</span>
       </div>
 
-      <!-- Desktop Table -->
-      <div class="hidden md:block overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-slate-50/80 text-left">
-              <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">{{ t('profile.cpa_col_range') }}</th>
-              <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">{{ t('profile.cpa_col_price') }}</th>
-              <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">{{ t('profile.cpa_col_status') }}</th>
-              <th class="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">{{ t('profile.cpa_col_progress') }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr 
-              v-for="(tier, i) in cpaRewardTiers" :key="i"
-              class="transition-colors"
-              :class="tier.status === 'active' ? 'bg-emerald-50/40' : 'hover:bg-slate-50/50'"
-            >
-              <td class="px-6 py-4">
-                <span class="text-sm font-bold text-slate-800">{{ tier.range }}</span>
-              </td>
-              <td class="px-6 py-4">
-                <span class="text-lg font-black text-slate-900">${{ tier.price.toLocaleString() }}</span>
-              </td>
-              <td class="px-6 py-4">
-                <span
-                  class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
-                  :class="{
-                    'bg-emerald-100 text-emerald-700': tier.status === 'active',
-                    'bg-slate-50 text-slate-400': tier.status === 'inactive'
-                  }"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="{
-                    'bg-emerald-500': tier.status === 'active',
-                    'bg-slate-300': tier.status === 'inactive'
-                  }"></span>
-                  {{ tier.statusLabel }}
-                </span>
-              </td>
-              <td class="px-6 py-4">
-                <div v-if="tier.status === 'active' && tier.target" class="space-y-1.5">
-                  <p class="text-xs font-bold text-emerald-700">{{ tier.progress }}</p>
-                  <div class="w-full max-w-[180px] h-1.5 bg-emerald-100 rounded-full overflow-hidden">
-                    <div 
-                      class="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                      :style="{ width: (tier.current / tier.target * 100) + '%' }"
-                    ></div>
-                  </div>
-                </div>
-                <span v-else class="text-sm text-slate-400">--</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Mobile Card Layout for CPA Tiers -->
-      <div class="md:hidden p-4 space-y-3">
-        <div 
-          v-for="(tier, i) in cpaRewardTiers" :key="'m'+i"
-          class="p-4 rounded-xl border transition-colors"
-          :class="tier.status === 'active' ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50/50 border-slate-100'"
-        >
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-bold text-slate-800">{{ tier.range }}</span>
-            <span
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-              :class="{
-                'bg-emerald-100 text-emerald-700': tier.status === 'active',
-                'bg-slate-100 text-slate-400': tier.status === 'inactive'
-              }"
-            >
-              <span class="w-1 h-1 rounded-full" :class="{
-                'bg-emerald-500': tier.status === 'active',
-                'bg-slate-300': tier.status === 'inactive'
-              }"></span>
-              {{ tier.statusLabel }}
-            </span>
+      <div class="p-4 md:p-6 space-y-6">
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Cbase -->
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-500 uppercase">{{ t('profile.cpa_base_price') }}</p>
+              <div class="flex items-baseline gap-1 mt-1">
+                <span class="text-2xl font-black text-slate-900">${{ baseCpa.toLocaleString() }}</span>
+                <span class="text-xs font-bold text-slate-400">TWD</span>
+              </div>
+            </div>
           </div>
-          <div class="text-lg font-black text-slate-900 mb-1">${{ tier.price.toLocaleString() }} <span class="text-[10px] font-bold text-slate-400">/ {{ t('profile.cpa_col_price') }}</span></div>
-          <div v-if="tier.status === 'active' && tier.target" class="space-y-1.5 mt-2">
-            <p class="text-[10px] font-bold text-emerald-700">{{ tier.progress }}</p>
-            <div class="w-full h-1.5 bg-emerald-100 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                :style="{ width: (tier.current / tier.target * 100) + '%' }"
-              ></div>
+          
+          <!-- My Ratio -->
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-white border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-emerald-700 uppercase">{{ t('profile.cpa_my_ratio') }}</p>
+              <div class="flex items-baseline gap-1 mt-1">
+                <span class="text-2xl font-black text-emerald-700">{{ myCpaRatio }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mechanism -->
+          <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-white border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-indigo-700 uppercase">{{ t('profile.cpa_mechanism') }}</p>
+              <div class="flex items-baseline mt-1">
+                <span class="text-base font-black text-indigo-700">{{ t('profile.cpa_bottom_up') }}</span>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- Rules Visualization -->
+        <div class="rounded-xl border border-slate-200 overflow-hidden">
+          <div class="grid grid-cols-4 bg-slate-50 border-b border-slate-200 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider px-4 py-3">
+            <span class="col-span-2 md:col-span-1">層級</span>
+            <span class="hidden md:block text-center">比例</span>
+            <span class="col-span-2 text-right">試算金額</span>
+          </div>
+          
+          <div 
+            v-for="(rule, idx) in distRules" :key="idx"
+            class="grid grid-cols-4 items-center px-4 py-3 border-b border-slate-100 last:border-0"
+            :class="rule.ratio > 0 ? 'bg-white' : 'bg-slate-50/50'"
+          >
+            <!-- Level -->
+            <div class="col-span-2 md:col-span-1 flex items-center gap-2">
+              <div 
+                class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0"
+                :class="{
+                  'bg-indigo-100 text-indigo-700': idx === 0,
+                  'bg-sky-100 text-sky-700': idx === 1,
+                  'bg-violet-100 text-violet-700': idx === 2,
+                  'bg-slate-100 text-slate-400': idx === 3
+                }"
+              >A{{ idx }}</div>
+              <span class="text-xs md:text-sm font-bold text-slate-700 truncate" :title="t(rule.key)">{{ t(rule.key) }}</span>
+            </div>
+
+            <!-- Ratio (Desktop) -->
+            <div class="hidden md:block text-center">
+              <span class="text-sm font-black" :class="rule.ratio > 0 ? 'text-slate-800' : 'text-slate-300'">{{ rule.ratio }}%</span>
+            </div>
+
+            <!-- Amount & Bar -->
+            <div class="col-span-2 flex items-center gap-3 justify-end">
+              <div class="hidden md:block flex-1 max-w-[120px] h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  class="h-full rounded-full"
+                  :class="{
+                    'bg-indigo-500': idx === 0,
+                    'bg-sky-400': idx === 1,
+                    'bg-violet-400': idx === 2,
+                    'bg-slate-200': idx === 3
+                  }"
+                  :style="{ width: rule.ratio + '%' }"
+                ></div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-black tabular-nums" :class="rule.ratio > 0 ? 'text-emerald-700' : 'text-slate-300'">
+                  {{ rule.ratio > 0 ? `$${rule.amount.toLocaleString()}` : '–' }}
+                </div>
+                <div class="md:hidden text-[10px] font-bold text-slate-400">{{ rule.ratio }}%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
       </div>
     </div>
 

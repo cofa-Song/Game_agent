@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 import { useI18n } from '~/composables/useI18n'
 
@@ -9,11 +9,8 @@ interface CpaData {
   uid: string;
   account: string;
   level: string;
-  cpaLevel1: number;
-  cpaLevel2: number;
-  cpaLevel3: number;
-  commissionRatio: number;
-  capCpa: number;
+  depth?: number;
+  baseCpa: number; // Platform-configured base CPA price (Cbase)
 }
 
 const props = defineProps<{
@@ -21,61 +18,53 @@ const props = defineProps<{
   agentData: CpaData | null;
 }>()
 
-const emit = defineEmits(['close', 'save'])
-
-const form = ref({
-  cpaLevel1: 0,
-  cpaLevel2: 0,
-  cpaLevel3: 0,
-  commissionRatio: 0
-})
+const emit = defineEmits(['close'])
 
 const isHistoryShow = ref(false)
 
-// Mock history data
+// Mock history data (platform admin actions only)
 const historyRecords = ref([
-  { date: '2025-03-10 14:30:22', admin: 'Admin_Super', action: '調整單價', details: '級距1: $100 -> $120' },
-  { date: '2025-03-05 09:12:05', admin: 'System', action: '初始配置', details: '級距1: $100, 級距2: $150, 級距3: $200' },
-  { date: '2025-02-28 16:45:00', admin: 'Manager_Wang', action: '調整抽成', details: '抽成分配: 40% -> 45%' }
+  { date: '2026-03-10 14:30:22', admin: 'Platform_Admin', action: '調整基礎單價', details: 'Cbase: $800 → $1,000' },
+  { date: '2026-01-05 09:12:05', admin: 'System', action: '初始配置', details: 'Cbase: $1,000' },
 ])
 
-watch(() => props.agentData, (newData) => {
-  if (newData) {
-    form.value = {
-      cpaLevel1: newData.cpaLevel1 || 0,
-      cpaLevel2: newData.cpaLevel2 || 0,
-      cpaLevel3: newData.cpaLevel3 || 0,
-      commissionRatio: newData.commissionRatio || 0
-    }
-  }
-}, { immediate: true })
-
-const isCpaValid = computed(() => {
-  if (!props.agentData) return true
-  const cap = props.agentData.capCpa
-  return form.value.cpaLevel1 <= cap &&
-         form.value.cpaLevel2 <= cap &&
-         form.value.cpaLevel3 <= cap
-})
-
 const handleClose = () => {
+  isHistoryShow.value = false
   emit('close')
 }
 
 useBodyScrollLock(() => props.show)
 
-const handleSubmit = () => {
-  if (!isCpaValid.value) return
-  emit('save', { ...form.value, uid: props.agentData?.uid })
-  handleClose()
-}
+// Fixed bottom-up distribution rules depending on agent's own level (L0 vs L1+)
+const distRules = computed(() => {
+  const base = props.agentData?.baseCpa ?? 0
+  const isL0 = props.agentData?.depth === 0
+
+  if (isL0) {
+    return [
+      { key: 'dist_a0', ratio: 100, amount: Math.floor(base * 1.0) },
+      { key: 'dist_a1', ratio: 50, amount: Math.floor(base * 0.5) },
+      { key: 'dist_a2', ratio: 25, amount: Math.floor(base * 0.25) },
+      { key: 'dist_a3', ratio: 0,  amount: 0 },
+    ]
+  } else {
+    return [
+      { key: 'dist_a0', ratio: 50, amount: Math.floor(base * 0.5) },
+      { key: 'dist_a1', ratio: 25, amount: Math.floor(base * 0.25) },
+      { key: 'dist_a2', ratio: 25, amount: Math.floor(base * 0.25) },
+      { key: 'dist_a3', ratio: 0,  amount: 0 },
+    ]
+  }
+})
+
+const formatAmount = (n: number) => new Intl.NumberFormat().format(n)
 </script>
 
 <template>
   <Transition name="fade">
     <div v-if="show && agentData" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <!-- Backdrop -->
-      <div 
+      <div
         class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
         @click="handleClose"
       ></div>
@@ -83,7 +72,7 @@ const handleSubmit = () => {
       <!-- Modal Content -->
       <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all border border-slate-200 flex flex-col max-h-[90vh]">
         <!-- Header -->
-        <div class="px-5 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-emerald-600 text-white relative overflow-hidden">
+        <div class="px-5 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-emerald-600 to-teal-600 text-white relative overflow-hidden">
           <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
           <div class="relative z-10">
             <h3 class="text-lg sm:text-xl font-bold">{{ t('cpa_modal.title') }}</h3>
@@ -94,7 +83,7 @@ const handleSubmit = () => {
               <span class="px-2 py-0.5 bg-white/20 rounded-full font-bold">{{ agentData.level }}</span>
             </div>
           </div>
-          <button 
+          <button
             @click="handleClose"
             class="relative z-10 p-2 text-emerald-100 hover:text-white hover:bg-white/10 rounded-full transition-colors"
           >
@@ -103,105 +92,154 @@ const handleSubmit = () => {
         </div>
 
         <!-- Body -->
-        <div class="p-5 sm:p-8 overflow-y-auto max-h-[70vh] space-y-6 sm:space-y-8 custom-scrollbar">
-          <!-- CPA Reward Matrix -->
-          <div class="space-y-4 sm:space-y-6">
-            <div class="flex items-center gap-2 text-emerald-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <h4 class="font-bold">{{ t('cpa_modal.cpa_unit_price') }}</h4>
-            </div>
+        <div class="p-5 sm:p-8 overflow-y-auto custom-scrollbar space-y-6">
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-              <div v-for="l in [1, 2, 3]" :key="l" class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase">{{ t('cpa_modal.level', { level: l }) }}</label>
-                  <span class="text-[10px] text-slate-400 font-bold">{{ t('cpa_modal.cap_limit', { cap: agentData.capCpa }) }}</span>
-                </div>
-                <div class="relative">
-                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-xs">$</span>
-                  <input 
-                    v-model.number="form['cpaLevel' + l as keyof typeof form]"
-                    type="number"
-                    class="w-full h-11 pl-6 pr-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 bg-slate-50/50 transition-all text-sm outline-none font-bold"
-                    :class="{'border-rose-500 focus:ring-rose-500/10': form['cpaLevel' + l as keyof typeof form] > agentData.capCpa}"
-                  >
-                </div>
-                <!-- Validation Error -->
-                <p v-if="form['cpaLevel' + l as keyof typeof form] > agentData.capCpa" class="text-[10px] text-rose-500 font-bold">
-                  {{ t('cpa_modal.cap_exceeded', { cap: agentData.capCpa }) }}
-                </p>
+          <!-- Mechanism Badge -->
+          <div class="flex items-center gap-3 p-3 bg-teal-50 border border-teal-100 rounded-2xl">
+            <div class="p-2 bg-teal-100 rounded-xl text-teal-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-teal-800">{{ t('cpa_modal.mechanism_title') }}</p>
+              <p class="text-xs text-teal-600 mt-0.5">SAL-302 · 固定比例 · 系統自動結算</p>
+            </div>
+            <span class="ml-auto px-2.5 py-1 bg-teal-100 text-teal-700 text-[10px] font-black rounded-full uppercase tracking-wide">AUTO</span>
+          </div>
+
+          <!-- Base CPA Price -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2 text-slate-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-600"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <h4 class="font-bold text-sm">{{ t('cpa_modal.base_cpa_label') }}</h4>
+            </div>
+            <div class="flex items-center gap-4 p-4 sm:p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div class="flex-1">
+                <span class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                  ${{ formatAmount(agentData.baseCpa) }}
+                </span>
+                <span class="text-sm font-bold text-slate-400 ml-1">TWD</span>
+              </div>
+              <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span class="text-[11px] font-bold">{{ t('cpa_modal.readonly_note').split('，')[0] }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Commission Allocation -->
-          <div class="space-y-4 sm:space-y-6 pt-6 sm:pt-8 border-t border-slate-100">
-            <div class="flex items-center gap-2 text-indigo-600">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-              <h4 class="font-bold">{{ t('cpa_modal.commission_title') }}</h4>
+          <!-- Distribution Rules Table -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2 text-slate-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              <h4 class="font-bold text-sm">{{ t('cpa_modal.dist_rule_title') }}</h4>
             </div>
 
-            <div class="p-4 sm:p-6 bg-indigo-50/50 border border-indigo-100/50 rounded-2xl space-y-4 sm:space-y-6">
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-bold text-slate-700">{{ t('cpa_modal.commission_label') }}</label>
+            <div class="rounded-2xl border border-slate-200 overflow-hidden">
+              <!-- Table header -->
+              <div class="grid grid-cols-4 bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider px-4 py-2.5">
+                <span>傭金來源層級</span>
+                <span class="text-center">比例</span>
+                <span class="col-span-2 text-right pr-1">{{ t('cpa_modal.example_title') }}（Cbase={{ formatAmount(agentData.baseCpa) }}）</span>
+              </div>
+
+              <!-- Rows -->
+              <div
+                v-for="(rule, idx) in distRules"
+                :key="rule.key"
+                class="grid grid-cols-4 items-center px-4 py-3.5 border-b border-slate-100 last:border-0 transition-colors"
+                :class="rule.ratio > 0 ? 'bg-white hover:bg-emerald-50/30' : 'bg-slate-50/60'"
+              >
+                <!-- Level label -->
                 <div class="flex items-center gap-2">
-                  <input 
-                    v-model.number="form.commissionRatio"
-                    type="number"
-                    min="0"
-                    max="100"
-                    class="w-16 h-8 text-center bg-white border border-indigo-200 rounded-lg text-indigo-600 font-bold text-sm outline-none"
+                  <div
+                    class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0"
+                    :class="{
+                      'bg-indigo-100 text-indigo-700': idx === 0,
+                      'bg-sky-100 text-sky-700': idx === 1,
+                      'bg-violet-100 text-violet-700': idx === 2,
+                      'bg-slate-100 text-slate-400': idx === 3
+                    }"
+                  >A{{ idx }}</div>
+                  <span class="text-xs font-bold text-slate-700">{{ t(`cpa_modal.dist_a${idx === 3 ? '3' : idx}`) }}</span>
+                </div>
+
+                <!-- Ratio bar -->
+                <div class="text-center">
+                  <span
+                    class="text-sm font-black"
+                    :class="rule.ratio > 0 ? 'text-slate-800' : 'text-slate-300'"
+                  >{{ rule.ratio }}%</span>
+                </div>
+
+                <!-- Bar + Amount -->
+                <div class="col-span-2 flex items-center gap-3 justify-end">
+                  <div class="flex-1 max-w-[100px] sm:max-w-[140px] h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all duration-500"
+                      :class="{
+                        'bg-indigo-500': idx === 0,
+                        'bg-sky-400': idx === 1,
+                        'bg-violet-400': idx === 2,
+                        'bg-slate-200': idx === 3
+                      }"
+                      :style="{ width: rule.ratio + '%' }"
+                    ></div>
+                  </div>
+                  <span
+                    class="text-sm font-black tabular-nums w-20 text-right"
+                    :class="rule.ratio > 0 ? 'text-emerald-700' : 'text-slate-300'"
                   >
-                  <span class="text-indigo-600 font-black">%</span>
+                    {{ rule.ratio > 0 ? `$${formatAmount(rule.amount)}` : '–' }}
+                  </span>
                 </div>
               </div>
 
-              <div class="space-y-3">
-                <input 
-                  v-model.number="form.commissionRatio"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                >
-                <div class="flex justify-between text-[10px] font-bold text-slate-400">
-                  <span>0%</span>
-                  <span>50%</span>
-                  <span>{{ t('cpa_modal.commission_max') }}</span>
-                </div>
+              <!-- Total -->
+              <div class="grid grid-cols-4 items-center px-4 py-3 bg-emerald-50 border-t-2 border-emerald-200">
+                <span class="text-xs font-black text-emerald-800 col-span-2">總發放 (Total)</span>
+                <div></div>
+                <span class="text-sm font-black text-emerald-700 text-right pr-1">
+                  ${{ formatAmount(agentData.baseCpa) }}
+                </span>
               </div>
             </div>
 
+            <!-- Note -->
+            <p class="text-[11px] text-slate-400 font-medium leading-relaxed">
+              {{ t('cpa_modal.example_note') }}
+            </p>
+          </div>
+
+          <!-- Edge Case Note -->
+          <div class="p-4 bg-amber-50/70 border border-amber-100 rounded-2xl space-y-2">
+            <div class="flex items-center gap-2 text-amber-700 font-bold text-xs">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              邊界規則說明
+            </div>
+            <ul class="text-[11px] text-amber-700/80 space-y-1 font-medium list-disc pl-4">
+              <li>若玩家直屬總代理，A0 獨得 100%（1,000 元），無 A1/A2</li>
+              <li>若中間代理帳號被停用，其份額將<strong>截留至平台</strong>，不遞補給上級</li>
+              <li>考核時效內未達標的玩家，永久失去觸發 CPA 資格</li>
+            </ul>
           </div>
         </div>
 
         <!-- Footer -->
         <div class="px-5 sm:px-8 py-4 sm:py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
-          <button 
+          <button
             @click="isHistoryShow = true"
             class="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
             {{ t('cpa_modal.history_btn') }}
           </button>
-          
-          <div class="flex items-center gap-2 sm:gap-3">
-            <button 
-              @click="handleClose"
-              class="px-4 sm:px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-200"
-            >
-              {{ t('cpa_modal.btn_cancel') }}
-            </button>
-            <button 
-              @click="handleSubmit"
-              :disabled="!isCpaValid"
-              class="px-6 sm:px-10 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/20 transform transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
-            >
-              <span>{{ t('cpa_modal.btn_save') }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-            </button>
-          </div>
+
+          <button
+            @click="handleClose"
+            class="px-6 sm:px-10 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-slate-800/20 transform transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            <span>{{ t('cpa_modal.btn_close') }}</span>
+          </button>
         </div>
 
         <!-- History Sidebar (Slide-over within modal) -->
@@ -212,14 +250,14 @@ const handleSubmit = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
                 {{ t('cpa_modal.history_title') }}
               </h4>
-              <button 
+              <button
                 @click="isHistoryShow = false"
                 class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
             </div>
-            
+
             <div class="flex-1 p-5 sm:p-8 overflow-y-auto custom-scrollbar space-y-6">
               <div v-for="(record, idx) in historyRecords" :key="idx" class="relative pl-8 pb-6 border-l-2 border-indigo-100 last:border-0 last:pb-0">
                 <div class="absolute left-[-9px] top-0 w-4 h-4 rounded-full bg-white border-4 border-indigo-500 shadow-sm"></div>
@@ -229,14 +267,14 @@ const handleSubmit = () => {
                     <span class="text-xs font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">{{ record.action }}</span>
                     <span class="text-xs text-slate-500 font-medium">{{ t('cpa_modal.history_operator') }}: {{ record.admin }}</span>
                   </div>
-                  <p class="text-sm text-slate-600 leading-relaxed">{{ record.details }}</p>
+                  <p class="text-sm text-slate-600 leading-relaxed font-mono">{{ record.details }}</p>
                 </div>
               </div>
             </div>
-            
+
             <div class="px-5 sm:px-8 py-4 sm:py-6 border-t border-slate-100 flex items-center justify-center bg-slate-50/30">
-              <button 
-                @click="isHistoryShow = false" 
+              <button
+                @click="isHistoryShow = false"
                 class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold rounded-xl transition-all"
               >
                 {{ t('cpa_modal.history_close') }}
@@ -254,22 +292,18 @@ const handleSubmit = () => {
 .fade-leave-active {
   transition: opacity 0.3s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
-
 .fade-enter-active .relative,
 .fade-leave-active .relative {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-
 .fade-enter-from .relative {
   transform: scale(0.95);
   opacity: 0;
 }
-
 .fade-leave-to .relative {
   transform: scale(0.98);
   opacity: 0;
@@ -280,50 +314,17 @@ const handleSubmit = () => {
 .slide-leave-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .slide-enter-from {
   transform: translateX(100%);
   opacity: 0;
 }
-
 .slide-leave-to {
   transform: translateX(100%);
   opacity: 0;
 }
 
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  height: 18px;
-  width: 18px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid #6366f1;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  cursor: pointer;
-  margin-top: -8.2px;
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 4px;
-  cursor: pointer;
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
-}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
 </style>
